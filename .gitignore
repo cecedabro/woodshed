@@ -1,0 +1,14 @@
+.agent/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.env
+.DS_Store
+._*
+backend/.media/
+backend/.devdb/
+node_modules/
