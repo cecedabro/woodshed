@@ -1,0 +1,54 @@
+[project]
+name = "woodshed"
+version = "0.1.0"
+description = "Self-hosted guitar practice organiser"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy>=2",
+    "alembic",
+    "psycopg[binary]",
+    "pydantic>=2",
+    "pydantic-settings",
+    "jinja2",
+    "python-multipart",
+]
+
+[dependency-groups]
+dev = [
+    "httpx",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "pgserver",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+known-third-party = ["alembic"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-p no:cacheprovider"
+filterwarnings = ["ignore:Using .httpx. with .starlette.testclient. is deprecated"]
+
+[tool.coverage.run]
+source = ["app"]
