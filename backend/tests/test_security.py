@@ -12,6 +12,7 @@ EXPECTED_CSP = (
 
 def test_security_headers_on_html(client: TestClient) -> None:
     """SPEC 10.5: every response has the four security headers."""
+    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
     r = client.get("/")
     assert r.status_code == 200
     assert r.headers["x-content-type-options"] == "nosniff"

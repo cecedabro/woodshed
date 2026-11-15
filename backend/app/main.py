@@ -49,9 +49,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return HTMLResponse(template.render({"active": None}), status_code=404)
 
     @app.get("/")
-    def home() -> HTMLResponse:
+    def home(login: None = Depends(require_login)) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                rows = db.execute(
+                    text(
+                        "SELECT r.id, r.name, COUNT(rb.id) AS block_count, "
+                        "COALESCE(SUM(rb.minutes), 0) AS total_minutes, "
+                        "MAX(ps.ended_at) AS last_practised "
+                        "FROM routine r "
+                        "LEFT JOIN routine_block rb ON rb.routine_id = r.id "
+                        "LEFT JOIN practice_session ps ON ps.routine_id = r.id "
+                        "GROUP BY r.id "
+                        "ORDER BY COALESCE(MAX(ps.ended_at), r.created_at) DESC"
+                    )
+                ).fetchall()
+            finally:
+                db.close()
+        routines = [
+            {
+                "id": row.id,
+                "name": row.name,
+                "block_count": row.block_count,
+                "total_minutes": row.total_minutes,
+                "last_practised": row.last_practised,
+            }
+            for row in rows
+        ]
+        if routines:
+            routines[0]["most_recent"] = True
         template = env.get_template("home.html")
-        return HTMLResponse(template.render({"active": "home"}))
+        return HTMLResponse(template.render({"active": "home", "routines": routines}))
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:

@@ -37,6 +37,7 @@ def _nav_links(html: str) -> list[dict[str, str]]:
 
 def test_home_has_all_five_nav_links(client) -> None:
     """SPEC 10.1: every page has the five nav links."""
+    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
     r = client.get("/")
     assert r.status_code == 200
 
@@ -49,6 +50,7 @@ def test_home_has_all_five_nav_links(client) -> None:
 
 def test_home_has_aria_current(client) -> None:
     """SPEC 10.1: only the current page has aria-current='page'."""
+    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
     r = client.get("/")
     assert r.status_code == 200
 
@@ -60,6 +62,7 @@ def test_home_has_aria_current(client) -> None:
 
 def test_htmx_and_stylecss_linked(client) -> None:
     """The base template links htmx.min.js and style.css."""
+    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
     r = client.get("/")
     assert r.status_code == 200
     text = r.text
