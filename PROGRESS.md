@@ -250,3 +250,17 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   during the microtask queue and `sessionId` is still `null`.
 - Gotcha: Runner uses `deps.now()` (not `Date.now()`) for all timer calls, and `deps.cue()` for
   metronome beeps. Tests mock these via `{ api, now, cue }` deps object.
+
+## T25 — Runner page template and integration tests (SPEC 5.2, 6.2)
+- `backend/app/main.py`: added `get_run_routine` route at `GET /run/{routine_id}` with login
+  guard (401), 404 for unknown routines, and eager loading of `blocks -> item -> attachments`.
+  Template renders `data-blocks` JSON, per-block controls (Start/Pause/Skip), attachment links,
+  and `<script type="module">` for `/static/js/runner.js`.
+- `backend/app/templates/run.html`: new Jinja2 template with block list, metadata display,
+  attachment links (tab/PDF/audio), control buttons, and module script tag.
+- `backend/tests/test_runner_page.py`: 10 integration tests — login required, 404,
+  `data-blocks` JSON parsing (single/multiple blocks, null BPM), module script tag,
+  control buttons, and attachment links.
+- Gotcha: Template accesses `b.item.attachments` (second-level relationship); requires
+  `.joinedload(Routine.blocks).joinedload(RoutineBlock.item).joinedload(Item.attachments)`
+  to avoid `DetachedInstanceError` in both tests and production.

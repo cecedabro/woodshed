@@ -17,7 +17,7 @@ from app.db import get_db, make_engine, make_sessionmaker
 from app.item_forms import get_edit_item, get_new_item, post_edit_item, post_new_item
 from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
-from app.models import Attachment, Item, Routine, Take
+from app.models import Attachment, Item, Routine, RoutineBlock, Take
 from app.security import SecurityMiddleware
 from app.sessions import router as sessions_router
 from app.templating import env
@@ -394,6 +394,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "/routines/{routine_id}/delete",
         post_delete_routine,
         methods=["POST"],
+        response_model=None,
+    )
+
+    # ------------------------------------------------------------------
+    # Runner page (SPEC 5.2)
+    # ------------------------------------------------------------------
+
+    def get_run_routine(
+        routine_id: int,
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                routine = db.scalar(
+                    select(Routine)
+                    .where(Routine.id == routine_id)
+                    .options(
+                        joinedload(Routine.blocks)
+                        .joinedload(RoutineBlock.item)
+                        .joinedload(Item.attachments)
+                    )
+                )
+                if routine is None:
+                    raise HTTPException(status_code=404, detail="Routine not found")
+                blocks = routine.blocks
+            finally:
+                db.close()
+        template = env.get_template("run.html")
+        return HTMLResponse(
+            template.render({"active": "run", "routine": routine, "blocks": blocks})
+        )
+
+    app.add_api_route(
+        "/run/{routine_id}",
+        get_run_routine,
+        methods=["GET"],
         response_model=None,
     )
 
