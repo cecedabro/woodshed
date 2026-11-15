@@ -201,3 +201,11 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   time, resume continues from pause point, addSeconds(60), isDone at exactly 0, remaining never
   negative, completed timer stays at 0, played only counts actual running time, initial not-started
   state, pause-then-addSeconds interaction.
+
+## T21 — Metronome pure module (SPEC 6, frontend.md §js)
+- `backend/app/static/js/metronome.js`: pure module with `clampBpm(bpm)` (round, clamp 20-400),
+  `beatTimes(startTime, bpm, beatsPerBar, fromBeat, untilTime)` returning `[{time, beat, accent}]`
+  arrays, and `tapTempo(tapsMs)` (average BPM from last 4 taps, gap >2s restarts, null if <2 taps).
+- `backend/tests/js/metronome.test.js`: 25 tests — clampBpm rounding/clamping boundaries,
+  120 BPM at 0.5s spacing, beatsPerBar 4/3 accent patterns, fromBeat/untilTime windows,
+  tapTempo 500ms intervals→120, 2.5s gap restart, fewer-than-2 taps→null, 2000ms gap no-restart.
