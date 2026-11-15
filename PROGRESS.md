@@ -264,3 +264,17 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - Gotcha: Template accesses `b.item.attachments` (second-level relationship); requires
   `.joinedload(Routine.blocks).joinedload(RoutineBlock.item).joinedload(Item.attachments)`
   to avoid `DetachedInstanceError` in both tests and production.
+
+## T26 — Metronome class and runner-page glue (SPEC 6, frontend.md §js)
+- `backend/app/static/js/metronome.js`: `Metronome` class wraps `beatTimes` + `tapTempo` into a
+  Web Audio API scheduler (25 ms tick, 100 ms look-ahead, 1000 Hz accent / 800 Hz regular, 30 ms clicks).
+- `backend/app/static/js/run-page.js`: replaces `runner.js` — wires `createRunner`, `createTimer`,
+  `Metronome`, tap-tempo handler, localStorage resume/persistence, wake-lock keepalive, and
+  summary section with "Next Routine" link.
+- `backend/app/templates/run.html`: added metronome controls (BPM, play/stop, tap, beatsPerBar
+  selector), `#summary` div (hidden until last block), module script for `run-page.js`.
+- `backend/tests/js/metronome.test.js`: 38 tests — pure helpers + full Metronome class with
+  fake `AudioContext` (records oscillator scheduling at `osc.start()` to capture post-connect frequency changes).
+- `backend/tests/test_runner_page.py`: updated module script assertion to reference `run-page.js`.
+- Gotcha: Fake `AudioContext` records beats in `osc.start()` instead of `gain.connect()` because
+  the metronome sets `osc.frequency.value` after connecting the gain.

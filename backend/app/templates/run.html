@@ -12,11 +12,49 @@
         "start_bpm": {{ b.bpm if b.bpm is not none else "null" }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
-]'>
+]' data-routine-id="{{ routine.id }}">
 
 <h1>{{ routine.name }}</h1>
 
 <a href="/routines" class="back-link">&larr; Routines</a>
+
+<!-- Active block display -->
+<div class="active-block">
+  <h2 class="current-block-title">Not started</h2>
+  <div class="active-controls">
+    <div class="timer-display" data-timer>00:00</div>
+    <div class="bpm-display block-bpm">-- BPM</div>
+  </div>
+</div>
+
+<!-- Metronome controls (SPEC 6.2, 6.3) -->
+<div class="metro-controls">
+  <div class="bpm-buttons">
+    <button type="button" id="bpm-minus-5" class="btn btn-sm" aria-label="BPM -5">-5</button>
+    <button type="button" id="bpm-minus-1" class="btn btn-sm" aria-label="BPM -1">-1</button>
+    <button type="button" id="bpm-plus-1" class="btn btn-sm" aria-label="BPM +1">+1</button>
+    <button type="button" id="bpm-plus-5" class="btn btn-sm" aria-label="BPM +5">+5</button>
+    <button type="button" id="tap-tempo" class="btn btn-sm" aria-label="Tap tempo">Tap</button>
+  </div>
+  <div class="metro-options">
+    <label>
+      Beats:
+      <select id="beats-per-bar" aria-label="Beats per bar">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+      </select>
+    </label>
+    <button type="button" id="metronome-toggle" class="btn btn-sm">Metronome: ON</button>
+    <label>
+      Volume:
+      <input type="range" id="metronome-volume" min="0" max="1" step="0.05" value="0.5" aria-label="Metronome volume">
+    </label>
+  </div>
+</div>
 
 {% for b in blocks %}
 <section class="block" data-position="{{ b.position }}">
@@ -49,9 +87,12 @@
 </section>
 {% endfor %}
 
+<!-- Session summary (SPEC 5.3) -->
+<div class="session-summary" style="display:none;"></div>
+
 </div>
 {% endblock %}
 
 {% block head %}
-<script type="module" src="/static/js/runner.js"></script>
+<script type="module" src="/static/js/run-page.js"></script>
 {% endblock %}

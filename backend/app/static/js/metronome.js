@@ -74,3 +74,164 @@ export function tapTempo(tapsMs) {
 
   return clampBpm(bpm);
 }
+
+// --- Metronome class (look-ahead scheduler) ---
+
+/**
+ * Metronome class using the standard look-ahead scheduling pattern.
+ *
+ * A 25 ms setInterval asks beatTimes() for beats in the next 100 ms
+ * and schedules short oscillator clicks at the exact audioContext.currentTime
+ * values (1000 Hz accent, 800 Hz other beats, 30 ms).
+ */
+export class Metronome {
+  /**
+   * @param {AudioContext} audioContext  - real or fake AudioContext
+   */
+  constructor(audioContext) {
+    this._ctx = audioContext;
+    this._bpm = 80;
+    this._beatsPerBar = 4;
+    this._volume = 0.5;
+    this._playing = false;
+    this._timerId = null;
+    this._nextBeatIndex = 0;
+    this._cue = null; // optional callback for block-end cue
+    this._scheduledBeats = [];
+  }
+
+  /**
+   * Start playing at the given BPM (must not be called while already playing).
+   * @param {number} bpm
+   */
+  start(bpm) {
+    this._bpm = clampBpm(bpm);
+    this._playing = true;
+    this._nextBeatIndex = 0;
+    this._scheduledBeats = [];
+    this._tryResumeContext();
+    this._tick();
+    this._timerId = setInterval(() => this._tick(), 25);
+  }
+
+  /** Stop playing and clear the scheduler interval. */
+  stop() {
+    this._playing = false;
+    if (this._timerId !== null) {
+      clearInterval(this._timerId);
+      this._timerId = null;
+    }
+    this._nextBeatIndex = 0;
+    this._scheduledBeats = [];
+  }
+
+  /**
+   * Change BPM while playing.
+   * @param {number} bpm
+   */
+  setBpm(bpm) {
+    this._bpm = clampBpm(bpm);
+  }
+
+  /**
+   * Change beats per bar (2–7).
+   * @param {number} n
+   */
+  setBeatsPerBar(n) {
+    this._beatsPerBar = Math.max(2, Math.min(7, Math.round(n)));
+  }
+
+  /**
+   * Set volume (0–1).
+   * @param {number} v
+   */
+  setVolume(v) {
+    this._volume = Math.max(0, Math.min(1, v));
+  }
+
+  /** Set a cue callback invoked when the metronome plays a block-end cue. */
+  setCue(callback) {
+    this._cue = callback;
+  }
+
+  /**
+   * Play a one-shot cue sound (for block transitions).
+   */
+  playCue() {
+    if (this._ctx.state === "closed") return;
+    const ctx = this._ctx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.value = this._volume;
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.08);
+    if (this._cue) this._cue();
+  }
+
+  /**
+   * Try to resume the AudioContext (needed for iOS – must be in a user-gesture handler).
+   * @private
+   */
+  _tryResumeContext() {
+    const ctx = this._ctx;
+    if (ctx.state === "suspended") {
+      ctx.resume();
+    }
+  }
+
+  /**
+   * The 25 ms tick – looks ahead and schedules beats.
+   * @private
+   */
+  _tick() {
+    if (!this._playing) return;
+    const ctx = this._ctx;
+    const nowMs = ctx.currentTime * 1000;
+    const lookAheadMs = 100;
+    const scheduleAheadMs = 50;
+    const interval = 60000 / this._bpm;
+
+    // Generate beats for the next look-ahead window starting from where we left off
+    let beats = beatTimes(
+      nowMs + scheduleAheadMs,
+      this._bpm,
+      this._beatsPerBar,
+      this._nextBeatIndex,
+      nowMs + lookAheadMs
+    );
+
+    for (const beat of beats) {
+      this._scheduleBeat(beat);
+    }
+
+    // Advance the beat index for the next round
+    if (beats.length > 0) {
+      this._nextBeatIndex = beats[beats.length - 1].beat + 1;
+    }
+  }
+
+  /**
+   * Schedule a single click via AudioContext oscillator.
+   * @private
+   * @param {{time: number, beat: number, accent: boolean}} beat
+   */
+  _scheduleBeat(beat) {
+    const ctx = this._ctx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const freq = beat.accent ? 1000 : 800;
+    osc.frequency.value = freq;
+    gain.gain.value = this._volume;
+
+    // 30 ms click
+    const when = beat.time / 1000; // convert to seconds for audioContext.currentTime
+    osc.start(when);
+    osc.stop(when + 0.03);
+  }
+}

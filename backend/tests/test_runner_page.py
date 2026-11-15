@@ -178,7 +178,7 @@ def test_run_page_no_bpm_is_null(client: TestClient, db: Session) -> None:
 
 
 def test_run_page_has_module_script(client: TestClient, db: Session) -> None:
-    """The page includes a module script tag for runner.js."""
+    """The page includes a module script tag for run-page.js."""
     from app.models import Item, Routine, RoutineBlock
 
     item = Item(kind="song", title="Test")
@@ -194,7 +194,7 @@ def test_run_page_has_module_script(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/{routine.id}")
     html = resp.text
 
-    assert '<script type="module" src="/static/js/runner.js">' in html
+    assert '<script type="module" src="/static/js/run-page.js">' in html
 
 
 def test_run_page_has_controls(client: TestClient, db: Session) -> None:
