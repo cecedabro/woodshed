@@ -100,3 +100,21 @@ def create_item(db: Session, data: ItemIn) -> Item:
 def get_item(db: Session, item_id: int) -> Item | None:
     """Return the item with *item_id*, or ``None``."""
     return db.scalar(select(Item).where(Item.id == item_id))
+
+
+def update_item(db: Session, item_id: int, data: ItemIn) -> Item:
+    """Update an existing item with fields from *data* and return it."""
+    item = db.scalar(select(Item).where(Item.id == item_id))
+    if item is None:
+        raise ValueError(f"Item {item_id} not found")
+    item.kind = data.kind
+    item.title = data.title
+    item.artist = data.artist
+    item.status = data.status
+    item.current_bpm = data.current_bpm
+    item.original_url = data.original_url
+    item.notes = data.notes or ""
+    item.updated_at = datetime.now(UTC)
+    db.flush()
+    db.refresh(item)
+    return item

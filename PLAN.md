@@ -24,7 +24,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_login_ratelimit.py -q
 - [x] T09: Item service + JSON API (SPEC 3.1, 3.8) in `app/items_service.py` and `app/api.py`: pydantic `ItemIn` with every 3.1 rule, `POST /api/items` → 201, `GET /api/items/{id}` → 200/404. Write `tests/test_api_items.py`: create and read back every field; 422 for title "" and 201 chars, BPM 19 and 401, `ftp://` URL, unknown status; 20 and 400 BPM pass; nothing stored on 422.
   accept: cd backend && uv run pytest tests/test_api_items.py -q
-- [ ] T10: Item forms (SPEC 3.3): `/items/new` and `/items/{id}/edit` (GET form, POST → 303 to `/items/{id}`), reusing `ItemIn`; errors re-render with 422 next to the field. Write `tests/test_item_forms.py`.
+- [x] T10: Item forms (SPEC 3.3): `/items/new` and `/items/{id}/edit` (GET form, POST → 303 to `/items/{id}`), reusing `ItemIn`; errors re-render with 422 next to the field. Write `tests/test_item_forms.py`.
   accept: cd backend && uv run pytest tests/test_item_forms.py -q
 - [ ] T11: Item page (SPEC 3.4, without files, takes and tempo for now): all fields, original link with `target="_blank" rel="noopener"`, notes with line breaks kept (escaped, then newlines → `<br>`), edit link, styled 404 for an unknown id. Write `tests/test_item_page.py` (including that `<script>` in notes is escaped).
   accept: cd backend && uv run pytest tests/test_item_page.py -q

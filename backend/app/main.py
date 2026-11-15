@@ -13,6 +13,7 @@ from app.api import router as api_router
 from app.auth import get_login, post_login, post_logout
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
+from app.item_forms import get_edit_item, get_new_item, post_edit_item, post_new_item
 from app.security import SecurityMiddleware
 from app.templating import env
 
@@ -63,6 +64,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_api_route("/login", get_login, methods=["GET"])
     app.add_api_route("/login", post_login, methods=["POST"])
     app.add_api_route("/logout", post_logout, methods=["POST"])
+
+    app.add_api_route("/items/new", get_new_item, methods=["GET"], response_model=None)
+    app.add_api_route("/items/new", post_new_item, methods=["POST"], response_model=None)
+    app.add_api_route("/items/{item_id}/edit", get_edit_item, methods=["GET"], response_model=None)
+    app.add_api_route(
+        "/items/{item_id}/edit", post_edit_item, methods=["POST"], response_model=None
+    )
 
     app.include_router(api_router)
 
