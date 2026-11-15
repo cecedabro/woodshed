@@ -2,6 +2,11 @@
 
 Appended by the agent after each task: what changed, where, and gotchas for later tasks.
 
+## T30 — Weekly goal setting (SPEC 9.1)
+- `backend/app/main.py`: added GET `/settings` (renders settings form with `value` from `setting` table or default 120) and POST `/settings` (validates 0–10080, stores `weekly_goal_minutes` as string via `ON CONFLICT` upsert, 303 redirect on success, 422 on invalid input).
+- `backend/app/templates/settings.html`: extends `base.html`, form with number input (min=0, max=10080) for `weekly_goal_minutes`, error display, and "Save" button.
+- `backend/tests/test_settings.py`: 17 tests — auth (login required on GET/POST), GET default value (120), GET existing value, nav active state, POST validation (0→201, 120→201, 10080→201, -1→422, 10081→422, non-numeric→422, empty→422, replacement), 303 redirect on success.
+
 ## Skeleton (by hand, 2026-11-11)
 - `backend/` uv project (Python 3.12): `app/main.py` `create_app(settings)` keeps engine and
   sessionmaker on `app.state`; `/healthz`, `/readyz`; `config.py` with `check_production`.

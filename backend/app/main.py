@@ -566,6 +566,76 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response_model=None,
     )
 
+    # ------------------------------------------------------------------
+    # Settings page (SPEC 9.1)
+    # ------------------------------------------------------------------
+
+    def get_settings(
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                row = db.execute(
+                    text("SELECT value FROM setting WHERE key = 'weekly_goal_minutes'")
+                ).scalar_one_or_none()
+            finally:
+                db.close()
+        value = int(row) if row else 120
+        template = env.get_template("settings.html")
+        return HTMLResponse(template.render({"active": "settings", "value": value, "error": None}))
+
+    async def post_settings(
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse | RedirectResponse:
+        form = await request.form()
+        raw = form.get("weekly_goal_minutes")
+        minutes_str = raw.strip() if isinstance(raw, str) else ""
+        try:
+            minutes = int(minutes_str)
+        except (ValueError, TypeError):
+            template = env.get_template("settings.html")
+            return HTMLResponse(
+                template.render(
+                    {
+                        "active": "settings",
+                        "value": "",
+                        "error": "Enter a number between 0 and 10080.",
+                    }
+                ),
+                status_code=422,
+            )
+        if minutes < 0 or minutes > 10080:
+            template = env.get_template("settings.html")
+            return HTMLResponse(
+                template.render(
+                    {
+                        "active": "settings",
+                        "value": minutes_str,
+                        "error": "Enter a number between 0 and 10080.",
+                    }
+                ),
+                status_code=422,
+            )
+        with app.state.sessionmaker() as db:
+            try:
+                db.execute(
+                    text(
+                        "INSERT INTO setting (key, value) "
+                        "VALUES ('weekly_goal_minutes', :v) "
+                        "ON CONFLICT (key) DO UPDATE SET value = :v"
+                    ),
+                    {"v": str(minutes)},
+                )
+                db.commit()
+            finally:
+                db.close()
+        return RedirectResponse("/settings", status_code=303)
+
+    app.add_api_route("/settings", get_settings, methods=["GET"], response_model=None)
+    app.add_api_route("/settings", post_settings, methods=["POST"], response_model=None)
+
     app.include_router(api_router)
     app.include_router(sessions_router)
 
