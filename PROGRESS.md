@@ -65,3 +65,18 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   edited signature, missing dot, non-numeric expiry and expired cookie all fail.
 - Gotcha: `verify` splits on `"."` expecting exactly 2 parts (expiry + signature); the HMAC data
   includes the trailing dot so tampering with expiry changes the HMAC and is detected.
+
+## T07 — Login rate limiting (SPEC 2.5)
+- `backend/app/auth.py`: extended with rate-limit helpers (`_prune_failures`, `_is_rate_limited`,
+  `_record_failure`) that track timestamps on `app.state._failed_logins`. Added `get_login`,
+  `post_login`, `post_logout` route handlers using `Depends(_get_settings)`. `post_login` returns
+  HTTP 429 when 10+ failures occur within 15 minutes. Cookie helpers `_set_session_cookie` and
+  `_clear_session_cookie` added. `Form(...)` imported from `fastapi`.
+- `backend/app/main.py`: imported `get_login`, `post_login`, `post_logout` from `app.auth` and
+  registered them via `app.add_api_route` (avoids wrapper functions that bypass FastAPI DI).
+- `backend/app/templates/login.html`: login page with password form, "Wrong password" error display,
+  and "Back to Home" link.
+- `backend/tests/test_login_ratelimit.py`: 2 tests — 11th failed attempt returns 429; correct
+  password succeeds after 15-minute window (verified via `clock.now` monkeypatch).
+- Gotcha: `app.add_api_route` is required instead of wrapper functions — manual calls of
+  `Depends`-backed handlers bypass dependency injection and crash the response serializer.

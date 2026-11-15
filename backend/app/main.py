@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.auth import get_login, post_login, post_logout
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
 from app.security import SecurityMiddleware
@@ -57,6 +58,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except SQLAlchemyError:
             return JSONResponse({"status": "unavailable"}, status_code=503)
         return JSONResponse({"status": "ready"})
+
+    app.add_api_route("/login", get_login, methods=["GET"])
+    app.add_api_route("/login", post_login, methods=["POST"])
+    app.add_api_route("/logout", post_logout, methods=["POST"])
 
     return app
 
