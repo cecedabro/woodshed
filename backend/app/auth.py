@@ -60,6 +60,20 @@ def _get_settings(request: Request) -> Settings:
 
 
 # ---------------------------------------------------------------------------
+# Login check dependency
+# ---------------------------------------------------------------------------
+
+
+def require_login(request: Request) -> None:
+    """Raise HTTPException(401) if the user has no valid session cookie."""
+    settings = _get_settings(request)
+    if _parse_cookie(request, settings.SESSION_SECRET) is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=401, detail="Login required")
+
+
+# ---------------------------------------------------------------------------
 # Cookie helpers
 # ---------------------------------------------------------------------------
 

@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, text
@@ -11,13 +11,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from app.api import router as api_router
-from app.auth import get_login, post_login, post_logout
+from app.auth import get_login, post_login, post_logout, require_login
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
 from app.item_forms import get_edit_item, get_new_item, post_edit_item, post_new_item
 from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
-from app.models import Attachment, Item
+from app.models import Attachment, Item, Take
 from app.security import SecurityMiddleware
 from app.templating import env
 
@@ -209,6 +209,76 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "/items/{item_id}/attachments/{attachment_id}/_delete",
         post_delete_attachment,
         methods=["POST"],
+        response_model=None,
+    )
+
+    def get_media(
+        kind: str, id: int, request: Request, login: None = Depends(require_login)
+    ) -> Response:
+        media_dir = app.state.settings.MEDIA_DIR
+        kind_map = {"attachment": "attachments", "take": "takes"}
+        if kind not in kind_map:
+            raise HTTPException(status_code=404, detail="Unknown media kind")
+
+        fs_kind = kind_map[kind]
+        media: Attachment | Take | None = None
+        if kind == "attachment":
+            with app.state.sessionmaker() as db:
+                try:
+                    media = db.scalar(select(Attachment).where(Attachment.id == id))
+                finally:
+                    db.close()
+        else:
+            with app.state.sessionmaker() as db:
+                try:
+                    media = db.scalar(select(Take).where(Take.id == id))
+                finally:
+                    db.close()
+
+        if media is None:
+            raise HTTPException(status_code=404, detail="Media not found")
+
+        path = media_dir / fs_kind / media.stored_name
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+
+        content = path.read_bytes()
+        media_type = media.content_type or "application/octet-stream"
+
+        range_header = request.headers.get("range")
+        if range_header and range_header.startswith("bytes="):
+            range_spec = range_header[6:]
+            parts = range_spec.split("-", 1)
+            start_str, end_str = parts[0] or "", parts[1] or ""
+            try:
+                start = int(start_str) if start_str else 0
+                end = int(end_str) if end_str else len(content) - 1
+                if start < 0 or end >= len(content) or start > end:
+                    raise HTTPException(status_code=416, detail="Invalid range")
+            except ValueError:
+                raise HTTPException(status_code=416, detail="Invalid range") from None
+
+            sub = content[start : end + 1]
+            return Response(
+                content=sub,
+                media_type=media_type,
+                headers={
+                    "Content-Range": f"bytes {start}-{end}/{len(content)}",
+                    "Content-Disposition": f'inline; filename="{media.stored_name}"',
+                },
+                status_code=206,
+            )
+
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={"Content-Disposition": f'inline; filename="{media.stored_name}"'},
+        )
+
+    app.add_api_route(
+        "/media/{kind}/{id}",
+        get_media,
+        methods=["GET"],
         response_model=None,
     )
 

@@ -134,6 +134,23 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   extensions (`.gp`, `.pdf`, `.mp3` etc.) since `.tab` is not in SPEC §3.5 extension list.
 - Gotcha: `TestClient` follows redirects by default; all 303 assertions use `follow_redirects=False`.
 
+## T10 — Media serving route `GET /media/{kind}/{id}` (SPEC 10.4)
+- `backend/app/main.py`: added `get_media(kind, id, request, login)` route registered at `/media/{kind}/{id}`.
+  Requires login (`require_login`). Kind map converts URL slugs ("attachment", "take") to DB models and
+  filesystem dirs ("attachments", "takes"). Serves files with Range request support (206 partial,
+  `Content-Range` header, `Accept-Ranges: bytes`). Missing files return 404; unknown kind returns 404.
+  `Content-Disposition` uses `media.stored_name` (works for both `Attachment` and `Take`).
+  Falls back to `application/octet-stream` when `media.content_type` is `None`.
+- `backend/tests/test_media_serving.py`: 11 tests — serve attachment with content-type, serve take,
+  range requests (first bytes, trailing bytes, open-end), error cases (unknown kind 404, unknown id 404,
+  missing file 404, unauthenticated 401).
+- `backend/app/main.py`: added `Depends` to FastAPI imports; fixed B904 (added `from None` to HTTPException).
+- Fix: `Take` model has no `filename` attribute (only `stored_name`), so route uses `stored_name` for
+  both Attachment and Take. Content-type header assertions use `startswith` because FastAPI appends
+  `; charset=utf-8` to the content-type value.
+- Gotcha: Auth check fires before kind/id validation, so unauthenticated requests always get 401
+  regardless of whether kind/id are valid.
+
 ## T13 — Media helpers (SPEC 3.5, backend.md §media)
 - `backend/app/media.py`: `kind_for_filename(name)` maps file extensions (case-insensitive) to
   attachment kind (`tab`/`pdf`/`audio` or `None`); `save_upload(upload, subdir, limit_bytes,

@@ -34,7 +34,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_media.py -q
 - [x] T14: Attachments (SPEC 3.5): upload form on the item page (`POST /items/{id}/attachments`, multipart `file` + optional `label`), list on the item page grouped tab / PDF / audio, delete button. 422 for a bad extension, 413 over 100 MB (use a small limit from settings in the test: add `MAX_ATTACHMENT_BYTES` to Settings, default 100 MB). Write `tests/test_attachments.py` (row and file on disk; delete removes both).
   accept: cd backend && uv run pytest tests/test_attachments.py -q
-- [ ] T15: `GET /media/{kind}/{id}` (SPEC 10.4) for `attachment` and `take` rows: stored content type, Range support, 404 for unknown id or kind, 401/303 when logged out. Write `tests/test_media_serving.py` (full GET bytes equal; `Range: bytes=0-3` → 206 and 4 bytes with `Content-Range`).
+- [x] T15: `GET /media/{kind}/{id}` (SPEC 10.4) for `attachment` and `take` rows: stored content type, Range support, 404 for unknown id or kind, 401/303 when logged out. Write `tests/test_media_serving.py` (full GET bytes equal; `Range: bytes=0-3` → 206 and 4 bytes with `Content-Range`).
   accept: cd backend && uv run pytest tests/test_media_serving.py -q
 - [ ] T16: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment).
   accept: cd backend && uv run pytest tests/test_tab_page.py -q && node --check backend/app/static/js/tab.js
