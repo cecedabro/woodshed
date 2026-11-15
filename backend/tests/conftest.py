@@ -63,6 +63,7 @@ def migrated(db_url: str) -> str:
     cfg = Config(str(BACKEND / "alembic.ini"))
     cfg.set_main_option("script_location", str(BACKEND / "alembic"))
     cfg.set_main_option("sqlalchemy.url", db_url)
+    cfg.attributes["keep_url"] = True
     command.upgrade(cfg, "head")
     return db_url
 

@@ -6,7 +6,7 @@ The skeleton (SPEC §1) is done by hand: `/healthz`, `/readyz`, config, producti
 test fixtures, CI.
 
 ## Round 1: models, layout, login, library
-- [ ] T01: Models and one migration for `item`, `attachment` and `setting` exactly as docs/backend.md §model (CHECK constraints for the enums). Write `tests/test_models_library.py`: insert an item with an attachment and read them back; an invalid `kind` and an invalid `status` raise `IntegrityError`; deleting an item deletes its attachment rows.
+- [x] T01: Models and one migration for `item`, `attachment` and `setting` exactly as docs/backend.md §model (CHECK constraints for the enums). Write `tests/test_models_library.py`: insert an item with an attachment and read them back; an invalid `kind` and an invalid `status` raise `IntegrityError`; deleting an item deletes its attachment rows.
   accept: cd backend && uv run pytest tests/test_models_library.py -q
 - [ ] T02: Models and one migration for `routine`, `routine_block`, `practice_session`, `session_block` and `take` per docs/backend.md §model. Write `tests/test_models_practice.py`: a routine with two blocks in order; duplicate (routine_id, position) fails; deleting a routine sets `practice_session.routine_id` to NULL; deleting an item deletes its takes and sets `session_block.item_id` to NULL while `item_title` stays.
   accept: cd backend && uv run pytest tests/test_models_practice.py -q

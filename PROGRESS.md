@@ -9,3 +9,15 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - `tests/conftest.py`: fixtures `settings`, `app`, `client`, `db`; tables are truncated after each test.
 - Alembic baseline `0001` is empty; the first real tables come in T01.
 - Vendored: htmx 2.0.11, alphaTab 1.9.0 (render only, see docs/frontend.md §alphatab).
+
+## T01 — Models and one migration (2026-11-15)
+- `backend/app/models.py`: added `Item`, `Attachment`, `Setting` models with `Mapped` types,
+  CHECK constraints (`kind`, `status`, `attachment.kind`), cascade delete on attachments.
+- `backend/alembic/versions/0002_item_attachment_setting.py`: manual migration creating
+  `item`, `attachment`, `setting` tables with CHECK constraints and FK.
+- `backend/tests/test_models_library.py`: 7 tests covering insert+read-back, defaults,
+  CHECK constraint violations (IntegrityError), cascade delete, and setting updates.
+- `backend/tests/conftest.py`: fixed `migrated` fixture — added `cfg.attributes["keep_url"] = True`
+  so `env.py` does not overwrite the test DB URL with `$DATABASE_URL` env var.
+- Gotcha: `env.py:12-13` unconditionally reads `$DATABASE_URL` from the environment; the
+  `migrated` fixture must set `keep_url` to point Alembic at the test DB.
