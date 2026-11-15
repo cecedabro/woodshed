@@ -209,3 +209,18 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - `backend/tests/js/metronome.test.js`: 25 tests — clampBpm rounding/clamping boundaries,
   120 BPM at 0.5s spacing, beatsPerBar 4/3 accent patterns, fromBeat/untilTime windows,
   tapTempo 500ms intervals→120, 2.5s gap restart, fewer-than-2 taps→null, 2000ms gap no-restart.
+
+## T22 — Sessions API router and tests (SPEC 5.5, 5.6, 5.7)
+- `backend/app/sessions.py`: new router with three endpoints — `POST /api/sessions` (create session,
+  auto-populate routine total_minutes), `POST /api/sessions/{id}/blocks` (log block with clamping to
+  [0, elapsed+60], skip persist if clamped value <10s, update item.current_bpm),
+  `POST /api/sessions/{id}/finish` (return blocks count, minutes, per_block array).
+  All endpoints enforce `require_login` via `Depends`.
+- `backend/app/main.py`: imported `sessions_router` and registered via `app.include_router`.
+- `backend/tests/test_sessions_api.py`: 9 tests — create session (routine + no routine),
+  log block (stored, clamped, <10s skipped, BPM update), finish (summary, 404), unauthenticated 401.
+- Gotcha: `TestClient` calls must happen after `db.commit()` to avoid 404s on created resources.
+  `PracticeSession.started_at` must be set explicitly in fixtures to match mocked `clock_now()`,
+  otherwise `elapsed_since_start` clamping pushes blocks below 10s threshold.
+- Gotcha: `base_time` was redefined inside the `with` block, shadowing the outer `base_time`;
+  the `base_time` used by `_block_elapsed` in the test was wrong, causing a false clamping failure.

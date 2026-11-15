@@ -19,6 +19,7 @@ from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
 from app.models import Attachment, Item, Routine, Take
 from app.security import SecurityMiddleware
+from app.sessions import router as sessions_router
 from app.templating import env
 
 
@@ -467,6 +468,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.include_router(api_router)
+    app.include_router(sessions_router)
 
     return app
 

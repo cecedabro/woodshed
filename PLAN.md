@@ -50,7 +50,7 @@ test fixtures, CI.
   accept: cd backend && node --test tests/js/timer.test.js
 - [x] T21: `static/js/metronome.js` pure functions `clampBpm`, `beatTimes`, `tapTempo` per §js (the `Metronome` class comes in T26). Write `tests/js/metronome.test.js`: 120 BPM beats at 0.5 s spacing; accents every 4th beat and every 3rd with beatsPerBar 3; `fromBeat`/`untilTime` windows; taps at 500 ms intervals → 120; a 2.5 s gap restarts; fewer than 2 taps → null; clamp 10 → 20, 999 → 400.
   accept: cd backend && node --test tests/js/metronome.test.js
-- [ ] T22: Sessions API (SPEC 5.4–5.6, docs/backend.md §sessions) in `app/sessions.py`. Write `tests/test_sessions_api.py`: create; log a block (row values); clamp to elapsed + 60 (monkeypatched clock); 9 s → `{"stored": false}`; logging with a BPM updates `item.current_bpm`; finish returns the summary; 404 for an unknown session; logged out → 401.
+- [x] T22: Sessions API (SPEC 5.4–5.6, docs/backend.md §sessions) in `app/sessions.py`. Write `tests/test_sessions_api.py`: create; log a block (row values); clamp to elapsed + 60 (monkeypatched clock); 9 s → `{"stored": false}`; logging with a BPM updates `item.current_bpm`; finish returns the summary; 404 for an unknown session; logged out → 401.
   accept: cd backend && uv run pytest tests/test_sessions_api.py -q
 - [ ] T23: `close_stale_sessions(db, now)` (SPEC 5.7), called by `POST /api/sessions` and the home page. Write `tests/test_stale_sessions.py` (5 h 59 min open stays open, 6 h 1 min gets `ended_at` = its last block's `ended_at`, or `started_at` when it has no blocks).
   accept: cd backend && uv run pytest tests/test_stale_sessions.py -q
