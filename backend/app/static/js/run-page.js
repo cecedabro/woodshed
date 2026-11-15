@@ -76,10 +76,12 @@ let wakeLocking = false;
 // --- API helpers ---
 
 async function startSessionApi() {
+  const routineIdVal = runnerEl.dataset.routineId;
+  const routine_id = routineIdVal === "null" ? null : parseInt(routineIdVal || "0", 10);
   const res = await fetch("/api/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ routine_id: parseInt(runnerEl.dataset.routineId || "0", 10) }),
+    body: JSON.stringify({ routine_id }),
   });
   if (!res.ok) throw new Error("Failed to start session");
   const data = await res.json();

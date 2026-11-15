@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Woodshed — Running {{ routine.name }}{% endblock %}
+{% block title %}Woodshed — Running {{ routine.name if routine else "Free Practice" }}{% endblock %}
 
 {% block content %}
 <div class="runner" data-blocks='[
@@ -12,11 +12,15 @@
         "start_bpm": {{ b.bpm if b.bpm is not none else "null" }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
-]' data-routine-id="{{ routine.id }}">
+]' data-routine-id="{{ routine.id if routine else 'null' }}">
 
-<h1>{{ routine.name }}</h1>
+<h1>{{ routine.name if routine else blocks[0].item.title }}</h1>
 
+{% if routine %}
 <a href="/routines" class="back-link">&larr; Routines</a>
+{% else %}
+<a href="/library" class="back-link">&larr; Library</a>
+{% endif %}
 
 <!-- Active block display -->
 <div class="active-block">

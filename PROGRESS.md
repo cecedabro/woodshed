@@ -277,4 +277,17 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   fake `AudioContext` (records oscillator scheduling at `osc.start()` to capture post-connect frequency changes).
 - `backend/tests/test_runner_page.py`: updated module script assertion to reference `run-page.js`.
 - Gotcha: Fake `AudioContext` records beats in `osc.start()` instead of `gain.connect()` because
+
+## T28 — Free practice: `GET /run/item/{item_id}` (SPEC 5.8)
+- `backend/app/main.py`: added `get_run_item` route — fetches a single `Item` via
+  `joinedload(Item.attachments)` to avoid `DetachedInstanceError` after session close, renders
+  `run.html` with `routine=None` and a single `SimpleNamespace` block.
+- `backend/tests/test_free_practice.py`: 13 integration tests — login required, 404 on missing
+  item, `data-blocks` JSON parsing, `data-routine-id="null"`, custom `?minutes`, item title as
+  heading, attachment links (tab/PDF/audio), and library back-link presence.
+- Fix: route uses `db.get(Item, item_id, options=[joinedload(Item.attachments)])` instead of
+  plain `db.get()` so the template can access `b.item.attachments` after `db.close()`.
+- Fix: tests use `db.commit()` (not `db.flush()`) to avoid DB isolation between test fixture
+  session and the route's private session; aligned with existing pattern in `test_item_page.py`.
+- Fix: regex for `data-routine-id` uses double quotes to match HTML attribute syntax.
   the metronome sets `osc.frequency.value` after connecting the gain.

@@ -2,8 +2,9 @@
 
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, text
@@ -426,8 +427,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     # ------------------------------------------------------------------
-    # Runner page (SPEC 5.2)
+    # Runner page (SPEC 5.2, 5.8)
     # ------------------------------------------------------------------
+
+    def get_run_item(
+        item_id: int,
+        request: Request,
+        login: None = Depends(require_login),
+        minutes: int = Query(default=10),
+    ) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                item = db.get(Item, item_id, options=[joinedload(Item.attachments)])
+                if item is None:
+                    raise HTTPException(status_code=404, detail="Item not found")
+            finally:
+                db.close()
+        blocks = [
+            SimpleNamespace(
+                id="free",
+                item_id=item.id,
+                item=item,
+                minutes=minutes,
+                bpm=None,
+                position=0,
+            )
+        ]
+        template = env.get_template("run.html")
+        return HTMLResponse(template.render({"active": "run", "routine": None, "blocks": blocks}))
+
+    app.add_api_route(
+        "/run/item/{item_id}",
+        get_run_item,
+        methods=["GET"],
+        response_model=None,
+    )
 
     def get_run_routine(
         routine_id: int,

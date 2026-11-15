@@ -62,7 +62,7 @@ test fixtures, CI.
   accept: cd backend && node --test tests/js/metronome.test.js && node --check app/static/js/run-page.js
 - [x] T27: Home page (SPEC 5.1): one big start button per routine, the most recently practised first (then newest), linking to `/run/{id}?autostart=1`; run-page.js starts immediately on `autostart=1` after the first user gesture-capable tap (the button itself is that tap: navigate, then show one large "Start" if the browser blocks audio). Empty state links to create a routine. Write `tests/test_home.py` (order by last session).
   accept: cd backend && uv run pytest tests/test_home.py -q
-- [ ] T28: Free practice (SPEC 5.8): "Practise this" on `/items/{id}` opens `/run/item/{id}?minutes=10` with one block; sessions created with `routine_id` null. Write `tests/test_free_practice.py`.
+- [x] T28: Free practice (SPEC 5.8): "Practise this" on `/items/{id}` opens `/run/item/{id}?minutes=10` with one block; sessions created with `routine_id` null. Write `tests/test_free_practice.py`.
   accept: cd backend && uv run pytest tests/test_free_practice.py -q
 
 ## Round 3: progress, goal, takes
