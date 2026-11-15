@@ -291,3 +291,15 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   session and the route's private session; aligned with existing pattern in `test_item_page.py`.
 - Fix: regex for `data-routine-id` uses double quotes to match HTML attribute syntax.
   the metronome sets `osc.frequency.value` after connecting the gain.
+
+## T29 — Week maths `week_start` and `week_bounds_utc` (SPEC 9.4)
+- `backend/app/stats.py`: new module with two pure functions — `week_start(local_dt)` returns the
+  Monday `date` of the week containing the given datetime; `week_bounds_utc(monday)` returns the
+  UTC start and end of the Monday-to-Sunday week, correctly handling DST transitions (167h in
+  spring-forward weeks, 169h in fall-back weeks). Uses `LOCAL_TZ` from `app.clock` for local
+  time anchoring and `datetime.UTC` for UTC conversion.
+- `backend/tests/test_weeks.py`: 7 tests — `week_start` boundary (Sunday 23:30 vs Monday 00:10),
+  DST weeks (167h spring, 169h fall), normal week (168h), Monday midnight boundary, Sunday midnight.
+- Gotcha: DST weeks in 2026 contain Sundays (Mar 29 spring-forward, Oct 25 fall-back). The weeks
+  start on the *previous* Monday (Mar 23 / Oct 19), not the following Monday. Initial test dates
+  used the wrong Mondays, producing 168h instead of 167/169.

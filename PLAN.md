@@ -66,7 +66,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_free_practice.py -q
 
 ## Round 3: progress, goal, takes
-- [ ] T29: `app/stats.py` week maths (SPEC 9.4, docs/backend.md §stats): `week_start`, `week_bounds_utc`. Write `tests/test_weeks.py`: Sunday 23:30 vs Monday 00:10 local; the weeks containing 29 Mar 2026 and 25 Oct 2026 (DST) are 167 and 169 hours long.
+- [x] T29: `app/stats.py` week maths (SPEC 9.4, docs/backend.md §stats): `week_start`, `week_bounds_utc`. Write `tests/test_weeks.py`: Sunday 23:30 vs Monday 00:10 local; the weeks containing 29 Mar 2026 and 25 Oct 2026 (DST) are 167 and 169 hours long.
   accept: cd backend && uv run pytest tests/test_weeks.py -q
 - [ ] T30: Weekly goal (SPEC 9.1): `setting` row `weekly_goal_minutes`, default 120; `/settings` form (0–10080, else 422). Write `tests/test_settings.py`.
   accept: cd backend && uv run pytest tests/test_settings.py -q
