@@ -683,6 +683,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 from app.stats import weeks_12
 
                 week_data = weeks_12(db)
+
+                # Items with BPM progress (SPEC 7.2)
+                from app.stats import item_tempo_progress
+
+                tempo_items = item_tempo_progress(db)
             finally:
                 db.close()
 
@@ -693,6 +698,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "active": "progress",
                     "weeks": week_data,
                     "goal": goal,
+                    "tempo_items": tempo_items,
                 }
             )
         )

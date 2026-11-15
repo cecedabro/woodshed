@@ -95,6 +95,60 @@ def tempo_history(db: Session, item_id: int) -> list[tuple[date, int]]:
     return [(row[0], row[1]) for row in rows]
 
 
+def item_tempo_progress(db: Session) -> list[dict[str, str | int]]:
+    """Return items practised with a BPM in the last 90 days (SPEC 7.2).
+
+    For each item, returns the first BPM (from the earliest block in the
+    window), the latest BPM (from the latest block), and the difference.
+
+    Returns ``[(title, item_id, first_bpm, latest_bpm, diff)]`` ordered
+    by ``first_bpm ASC`` then ``title ASC``.
+    """
+    rows = db.execute(
+        text(
+            "WITH filtered AS ("
+            "  SELECT sb.item_id, sb.bpm, sb.ended_at, sb.id, "
+            "    ROW_NUMBER() OVER ("
+            "      PARTITION BY sb.item_id "
+            "      ORDER BY sb.ended_at ASC, sb.id ASC"
+            "    ) AS rn_asc, "
+            "    ROW_NUMBER() OVER ("
+            "      PARTITION BY sb.item_id "
+            "      ORDER BY sb.ended_at DESC, sb.id DESC"
+            "    ) AS rn_desc "
+            "  FROM session_block sb "
+            "  WHERE sb.bpm IS NOT NULL "
+            "    AND sb.ended_at > NOW() - INTERVAL '90 days' "
+            "), "
+            "first_bpm AS ("
+            "  SELECT item_id, bpm AS first_bpm "
+            "  FROM filtered WHERE rn_asc = 1 "
+            "), "
+            "latest_bpm AS ("
+            "  SELECT item_id, bpm AS latest_bpm "
+            "  FROM filtered WHERE rn_desc = 1 "
+            ") "
+            "SELECT i.title, i.id, fb.first_bpm, lb.latest_bpm, "
+            "       (lb.latest_bpm - fb.first_bpm) AS diff "
+            "FROM first_bpm fb "
+            "JOIN latest_bpm lb ON fb.item_id = lb.item_id "
+            "JOIN item i ON i.id = fb.item_id "
+            "ORDER BY fb.first_bpm ASC, i.title ASC"
+        )
+    ).fetchall()
+
+    return [
+        {
+            "title": row[0],
+            "item_id": row[1],
+            "first_bpm": row[2],
+            "latest_bpm": row[3],
+            "diff": row[4],
+        }
+        for row in rows
+    ]
+
+
 def weeks_12(db: Session) -> list[dict[str, int | date]]:
     """Return the last 12 weeks of data for the /progress page.
 

@@ -332,3 +332,19 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   tests (progress element, text, data reflection, custom goal).
 - Gotcha: `datetime` import was initially missing from `home` route (only `UTC` was imported),
   causing `NameError` at runtime. Fixed by importing `datetime` alongside `UTC`.
+
+## T34 — Tempo progress table /progress part 2 (SPEC 7.2)
+- `backend/app/stats.py`: added `item_tempo_progress(db)` — SQL query using `ROW_NUMBER()` window
+  functions to find first/latest BPM per item in the last 90-day window. Returns `list[dict[str, str | int]]`
+  with keys `title`, `item_id`, `first_bpm`, `latest_bpm`, `diff`. Excludes NULL bpm and blocks older
+  than 90 days. Ordered by `first_bpm ASC`, `title ASC`. Split long SQL strings to satisfy E501.
+- `backend/app/main.py`: `get_progress` now calls `item_tempo_progress(db)` and passes `tempo_items`
+  to the template. Fixed duplicate closing `)` on line 705.
+- `backend/app/templates/progress.html`: added conditional tempo progress `<section>` with table
+  showing Item (link to detail), First BPM, Latest BPM, Change with `delta-up`/`delta-down` CSS classes.
+- `backend/tests/test_progress_tempo.py`: 17 tests — 10 unit tests for `item_tempo_progress` (empty DB,
+  no-BPM items, single block, BPM increase/decrease, middle blocks ignored, 91-day exclusion, 90-day
+  boundary, multiple items sorting, mixed NULL/valid BPM) and 7 page rendering tests (section presence,
+  BPM values, delta classes, no-section when empty, item link, table headers).
+- Fixed E501 violations in `stats.py` by splitting window function SQL across multiple lines.
+- Fixed `list[dict]` → `list[dict[str, str | int]]` to satisfy mypy strict typing.

@@ -29,4 +29,32 @@
         </tbody>
     </table>
 </section>
+
+{% if tempo_items %}
+<section class="progress-table" aria-labelledby="progress-tempo-caption">
+    <h2 id="progress-tempo-caption">Tempo progress</h2>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Item</th>
+                <th scope="col">First BPM</th>
+                <th scope="col">Latest BPM</th>
+                <th scope="col">Change</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in tempo_items %}
+            <tr>
+                <td><a href="/items/{{ item.item_id }}">{{ item.title }}</a></td>
+                <td>{{ item.first_bpm }}</td>
+                <td>{{ item.latest_bpm }}</td>
+                <td class="delta {% if item.diff > 0 %}delta-up{% elif item.diff < 0 %}delta-down{% endif %}">
+                    {{ item.diff }} bpm
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
 {% endblock %}

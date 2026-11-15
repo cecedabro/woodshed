@@ -76,7 +76,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_progress_weeks.py -q
 - [x] T33: Tempo history (SPEC 7.1): `tempo_history(db, item_id)` → [(local date, max bpm)], the text "60 → 72 → 84" and a small inline SVG line on `/items/{id}`. Write `tests/test_tempo_history.py` (two blocks on one day → max; null BPMs ignored; order oldest first).
   accept: cd backend && uv run pytest tests/test_tempo_history.py -q
-- [ ] T34: `/progress` part 2 (SPEC 7.2): table of items with a BPM in the last 90 days, first and latest BPM and "+24 bpm". Write `tests/test_progress_tempo.py` (91-day-old block excluded).
+- [x] T34: `/progress` part 2 (SPEC 7.2): table of items with a BPM in the last 90 days, first and latest BPM and "+24 bpm". Write `tests/test_progress_tempo.py` (91-day-old block excluded).
   accept: cd backend && uv run pytest tests/test_progress_tempo.py -q
 - [ ] T35: Takes upload (SPEC 8.2) in `app/takes.py`: `sniff_audio(first_bytes) -> "webm"|"mp4"|"ogg"|None`, `POST /api/items/{id}/takes`. Add `MAX_TAKE_BYTES` (default 25 MB) to Settings. Write `tests/test_takes_upload.py` (each of the three formats with crafted header bytes → 201, row + file; wrong bytes → 415; declared mp4 with WebM bytes → 415; too big → 413; duration 0 and 601 → 422).
   accept: cd backend && uv run pytest tests/test_takes_upload.py -q
