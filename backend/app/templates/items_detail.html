@@ -60,5 +60,49 @@
             <dd>{{ item.updated_at|local_time }}</dd>
         </div>
     </dl>
+
+    {% if item.attachments %}
+    <div class="attachments-section">
+        <h2>Attachments</h2>
+
+        {% for kind in ["tab", "pdf", "audio"] %}
+            {% set group = item.attachments|selectattr("kind", "equalto", kind)|list %}
+            {% if group %}
+            <h3>{{ kind|capitalize }}</h3>
+            <ul class="attachment-list">
+            {% for att in group %}
+                <li class="attachment-item">
+                    <span class="attachment-label">{{ att.label or att.original_name }}</span>
+                    <span class="attachment-meta">{{ att.size_bytes }} bytes</span>
+                    <div class="attachment-actions">
+                        <a href="/attachments/{{ att.id }}/download" class="btn btn-sm">Download</a>
+                        <form method="post" action="/items/{{ item.id }}/attachments/{{ att.id }}/_delete" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="attachments-section">
+        <h3>Add attachment</h3>
+        <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data" class="upload-form">
+            <div class="field-row">
+                <label for="attach-file">File</label>
+                <input type="file" id="attach-file" name="file" required accept=".tab,.gtp,.htm,.html,.pdf,.mp3,.wav,.ogg,.m4a,.flac">
+            </div>
+            <div class="field-row">
+                <label for="attach-label">Label (optional)</label>
+                <input type="text" id="attach-label" name="label" placeholder="e.g. Slow version, Cover tab" maxlength="200">
+            </div>
+            <div class="field-row">
+                <button type="submit" class="btn">Upload</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

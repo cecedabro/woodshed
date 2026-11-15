@@ -212,6 +212,111 @@ a:hover {
 }
 
 /* ------------------------------------------------------------------ */
+/* Attachments (SPEC 3.9, 3.10)                                         */
+/* ------------------------------------------------------------------ */
+
+.attachments-section {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid #2e2a24;
+}
+
+.attachments-section h2 {
+    font-size: var(--font-xl);
+    color: var(--text);
+    margin-bottom: var(--space-md);
+}
+
+.attachments-section h3 {
+    font-size: var(--font-md);
+    color: var(--text-dim);
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.attachment-list {
+    list-style: none;
+    margin-bottom: var(--space-md);
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid #2e2a24;
+}
+
+.attachment-label {
+    flex: 1;
+    font-size: var(--font-md);
+    color: var(--text);
+}
+
+.attachment-meta {
+    font-size: var(--font-sm);
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.attachment-actions {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Form helpers                                                         */
+/* ------------------------------------------------------------------ */
+
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.upload-form .btn {
+    align-self: flex-start;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: var(--font-sm);
+    cursor: pointer;
+    text-decoration: none;
+    min-height: 36px;
+    min-width: 48px;
+}
+
+.btn:hover {
+    background: var(--accent-dim);
+    text-decoration: none;
+}
+
+.btn-sm {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-sm);
+    min-height: 28px;
+}
+
+.btn-danger {
+    background: #c0392b;
+}
+
+.btn-danger:hover {
+    background: #a93226;
+}
+
+/* ------------------------------------------------------------------ */
 /* Reduced motion                                                       */
 /* ------------------------------------------------------------------ */
 

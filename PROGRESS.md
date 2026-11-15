@@ -116,6 +116,24 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   combined filters, and empty status groups omitted.
 - Fix: wrapped `db.scalars(stmt).all()` in `list()` to satisfy mypy strict typing.
 
+## T14 — Attachment upload, delete, download & listing (SPEC 3.5, 3.9, 3.10)
+- `backend/app/config.py`: added `MAX_ATTACHMENT_BYTES` (100 MB default) to `Settings`.
+- `backend/app/main.py`: added `joinedload(Item.attachments)` to `get_item_page`; registered three routes —
+  `POST /items/{item_id}/attachments` (upload with kind derivation, size check, label),
+  `POST /items/{item_id}/attachments/{attachment_id}/_delete` (delete DB row + file),
+  `GET /attachments/{attachment_id}/download` (serve file with Content-Disposition).
+- `backend/app/templates/items_detail.html`: added attachment listing grouped by kind
+  (tabs render via alphaTab at `/items/{id}/tab/{att_id}`, PDFs open in browser, audio uses `<audio>`),
+  and a multipart upload form POSTing to `/_delete` for deletion.
+- `backend/app/static/style.css`: added `.attachment-group`, `.attachment-list`, `.upload-form`,
+  `.attachment-disk` styles for the attachment UI.
+- `backend/tests/test_attachments.py`: 14 tests — valid upload (tab/pdf/audio + label), 422 for
+  unknown extension, 413 for oversized file, 404 for missing item/attachment, download returns
+  file bytes, missing disk file returns 404, delete removes DB row + file.
+- Fix: model uses `filename` (not `original_name`); test file extensions must use allowed
+  extensions (`.gp`, `.pdf`, `.mp3` etc.) since `.tab` is not in SPEC §3.5 extension list.
+- Gotcha: `TestClient` follows redirects by default; all 303 assertions use `follow_redirects=False`.
+
 ## T13 — Media helpers (SPEC 3.5, backend.md §media)
 - `backend/app/media.py`: `kind_for_filename(name)` maps file extensions (case-insensitive) to
   attachment kind (`tab`/`pdf`/`audio` or `None`); `save_upload(upload, subdir, limit_bytes,
