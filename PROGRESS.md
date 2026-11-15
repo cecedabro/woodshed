@@ -44,3 +44,15 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   and a "Back to Home" link pointing to `/`.
 - `backend/tests/test_404.py`: 3 tests — HTML 404 for unknown paths (asserts 404 status, HTML content,
   home link present), HTML 404 even with Accept: application/json, JSON 404 for `/api/` paths.
+
+## T05 — Security headers + Origin check (SPEC 10.5, 2.6)
+- `backend/app/security.py`: `SecurityMiddleware` (Starlette `BaseHTTPMiddleware`) adds four headers
+  (`X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `X-Frame-Options: DENY`, exact
+  CSP) to every response, and returns 403 for non-GET/HEAD requests with a foreign `Origin` header.
+  Cross-origin check compares `Origin` against `{scheme}://{hostname}`.
+- `backend/app/main.py`: imported `SecurityMiddleware` and registered it via `app.add_middleware()`.
+- `backend/tests/test_security.py`: 11 tests — headers on HTML/JSON/404 responses, 403 on POST/PUT/DELETE
+  with foreign Origin, pass on same-origin Origin, pass without Origin header, GET/HEAD exempt from check,
+  port mismatch treated as foreign.
+- Gotcha: `TestClient` defaults to `http://testserver` (not `https`), so same-origin Origin in tests
+  must be `http://testserver`.

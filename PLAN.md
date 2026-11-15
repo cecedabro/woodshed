@@ -14,7 +14,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_layout.py -q
 - [x] T04: Styled 404 (SPEC 10.6): unknown HTML paths render `templates/404.html` (extends base, link home) with 404; `/api/...` keeps JSON 404. Write `tests/test_404.py`.
   accept: cd backend && uv run pytest tests/test_404.py -q
-- [ ] T05: `app/security.py` (SPEC 10.5, 2.6): middleware adding the four headers with the exact CSP, and the Origin check (403 on POST with a foreign Origin; same origin and no Origin pass). Write `tests/test_security.py`.
+- [x] T05: `app/security.py` (SPEC 10.5, 2.6): middleware adding the four headers with the exact CSP, and the Origin check (403 on POST with a foreign Origin; same origin and no Origin pass). Write `tests/test_security.py`.
   accept: cd backend && uv run pytest tests/test_security.py -q
 - [ ] T06: Pure cookie functions in `app/auth.py` (SPEC 2.2, docs/backend.md §auth): `sign(expiry, secret)` and `verify(cookie, secret, now)`. Write `tests/test_auth_cookie.py`: a fresh cookie verifies; wrong secret, edited expiry, edited signature, missing dot, non-numeric expiry and an expired cookie all fail.
   accept: cd backend && uv run pytest tests/test_auth_cookie.py -q

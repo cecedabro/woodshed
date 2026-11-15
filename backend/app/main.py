@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
+from app.security import SecurityMiddleware
 from app.templating import env
 
 
@@ -26,6 +27,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     STATIC_DIR = Path(__file__).resolve().parents[0] / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    app.add_middleware(SecurityMiddleware)
 
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: HTTPException) -> Response:
