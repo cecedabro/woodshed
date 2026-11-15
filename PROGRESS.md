@@ -56,3 +56,12 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   port mismatch treated as foreign.
 - Gotcha: `TestClient` defaults to `http://testserver` (not `https`), so same-origin Origin in tests
   must be `http://testserver`.
+
+## T06 — Pure cookie sign/verify (SPEC 2.2, docs/backend.md §auth)
+- `backend/app/auth.py`: pure functions `sign(expiry, secret) -> str` and `verify(cookie, secret, now) -> bool`.
+  Cookie format is `<expiry_unix>.<hex HMAC-SHA256>`; `sign` computes HMAC over `f"{expiry}."`,
+  `verify` splits on `.`, rejects non-2-part or expired cookies, and uses `hmac.compare_digest`.
+- `backend/tests/test_auth_cookie.py`: 7 tests — fresh cookie verifies; wrong secret, edited expiry,
+  edited signature, missing dot, non-numeric expiry and expired cookie all fail.
+- Gotcha: `verify` splits on `"."` expecting exactly 2 parts (expiry + signature); the HMAC data
+  includes the trailing dot so tampering with expiry changes the HMAC and is detected.

@@ -16,7 +16,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_404.py -q
 - [x] T05: `app/security.py` (SPEC 10.5, 2.6): middleware adding the four headers with the exact CSP, and the Origin check (403 on POST with a foreign Origin; same origin and no Origin pass). Write `tests/test_security.py`.
   accept: cd backend && uv run pytest tests/test_security.py -q
-- [ ] T06: Pure cookie functions in `app/auth.py` (SPEC 2.2, docs/backend.md §auth): `sign(expiry, secret)` and `verify(cookie, secret, now)`. Write `tests/test_auth_cookie.py`: a fresh cookie verifies; wrong secret, edited expiry, edited signature, missing dot, non-numeric expiry and an expired cookie all fail.
+- [x] T06: Pure cookie functions in `app/auth.py` (SPEC 2.2, docs/backend.md §auth): `sign(expiry, secret)` and `verify(cookie, secret, now)`. Write `tests/test_auth_cookie.py`: a fresh cookie verifies; wrong secret, edited expiry, edited signature, missing dot, non-numeric expiry and an expired cookie all fail.
   accept: cd backend && uv run pytest tests/test_auth_cookie.py -q
 - [ ] T07: Login (SPEC 2.1, 2.3, 2.4): `GET/POST /login`, `POST /logout`, `templates/login.html`, and middleware that sends HTML routes to `/login` (303) and gives `/api/` 401 JSON without a valid cookie; open paths as SPEC 2.3. Cookie attributes per 2.2 (`Secure` only in production). In `tests/conftest.py`, make `client` log in and add `anon_client`; existing tests must still pass. Write `tests/test_login.py` (right/wrong password, cookie attributes, redirect, 401 on `/api/x`, `/healthz` open, logout clears the cookie).
   accept: cd backend && uv run pytest tests/test_login.py -q && cd backend && uv run pytest -q
