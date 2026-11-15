@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Woodshed -- Library{% endblock %}
+
+{% block content %}
+<h1>Library</h1>
+
+<form method="get" action="/library" class="library-filters">
+    <label for="kind">Kind</label>
+    <select name="kind" id="kind">
+        <option value="">All</option>
+        <option value="song"{% if kind_filter == "song" %} selected{% endif %}>Song</option>
+        <option value="exercise"{% if kind_filter == "exercise" %} selected{% endif %}>Exercise</option>
+    </select>
+
+    <label for="q">Search</label>
+    <input type="text" name="q" id="q" placeholder="Search title" value="{{ q or '' }}">
+
+    <button type="submit">Filter</button>
+    {% if kind_filter or q %}
+    <a href="/library" class="clear-link">Clear</a>
+    {% endif %}
+</form>
+
+{% if not groups %}
+<div class="library-empty">
+    <p>No items in your library.</p>
+    <a href="/items/new">Add your first item</a>
+</div>
+{% endif %}
+
+{% for status, items in groups.items() %}
+<section class="library-group">
+    <h2>{{ status|capitalize }}</h2>
+    <ul class="library-list">
+        {% for item in items %}
+        <li class="library-item">
+            <span class="kind-badge kind-{{ item.kind }}">{{ item.kind }}</span>
+            <a href="/items/{{ item.id }}">{{ item.title }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endfor %}
+{% endblock %}

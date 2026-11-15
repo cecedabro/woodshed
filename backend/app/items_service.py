@@ -4,7 +4,7 @@ import re
 from datetime import UTC, datetime
 
 from pydantic import BaseModel, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Item
@@ -118,3 +118,37 @@ def update_item(db: Session, item_id: int, data: ItemIn) -> Item:
     db.flush()
     db.refresh(item)
     return item
+
+
+# ---------------------------------------------------------------------------
+# Library queries (SPEC 3.2)
+# ---------------------------------------------------------------------------
+
+_STATUS_ORDER = ("learning", "polishing", "repertoire")
+
+
+def filter_items(
+    db: Session,
+    *,
+    kind: str | None = None,
+    q: str | None = None,
+) -> list[Item]:
+    """Return items filtered by *kind* and/or case-insensitive *q* title search."""
+    stmt = select(Item).order_by(Item.title)
+    if kind is not None:
+        stmt = stmt.where(Item.kind == kind)
+    if q is not None and q.strip():
+        stmt = stmt.where(func.lower(Item.title).contains(q.strip().lower()))
+    return list(db.scalars(stmt).all())
+
+
+def group_by_status(items: list[Item]) -> dict[str, list[Item]]:
+    """Group *items* by status, preserving the canonical order.
+
+    Returns a dict with keys ``learning``, ``polishing``, ``repertoire``
+    (only statuses that have items).
+    """
+    groups: dict[str, list[Item]] = {}
+    for item in items:
+        groups.setdefault(item.status, []).append(item)
+    return {k: groups[k] for k in _STATUS_ORDER if k in groups}

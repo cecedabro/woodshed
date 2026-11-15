@@ -28,7 +28,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_item_forms.py -q
 - [x] T11: Item page (SPEC 3.4, without files, takes and tempo for now): all fields, original link with `target="_blank" rel="noopener"`, notes with line breaks kept (escaped, then newlines → `<br>`), edit link, styled 404 for an unknown id. Write `tests/test_item_page.py` (including that `<script>` in notes is escaped).
   accept: cd backend && uv run pytest tests/test_item_page.py -q
-- [ ] T12: `/library` (SPEC 3.2): grouped learning / polishing / repertoire, `?kind=` filter, `?q=` case-insensitive title search, empty state with a link to `/items/new`. Write `tests/test_library.py`.
+- [x] T12: `/library` (SPEC 3.2): grouped learning / polishing / repertoire, `?kind=` filter, `?q=` case-insensitive title search, empty state with a link to `/items/new`. Write `tests/test_library.py`.
   accept: cd backend && uv run pytest tests/test_library.py -q
 - [ ] T13: `app/media.py` (docs/backend.md §media): `kind_for_filename(name)` per SPEC 3.5, `save_upload(upload, subdir, limit_bytes, media_dir) -> (stored_name, size)` copying in 1 MiB chunks and raising a `TooLarge` error (partial file removed), `delete_file(...)`. Write `tests/test_media.py` with real files under `tmp_path` (limit exact = ok, limit + 1 = TooLarge and no file left; `.GP5` upper case → tab; `.exe` → None).
   accept: cd backend && uv run pytest tests/test_media.py -q

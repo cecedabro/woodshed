@@ -98,3 +98,20 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   Added `db.commit()` in the POST route handler so seeded items survive for subsequent GET/migration checks.
 - Gotcha: `db.execute(select(Item)).scalar()` returns `None` (not `0`) when no rows exist.
   Used `.scalars().first() or 0` in count assertions.
+
+## T12 — /library endpoint (SPEC 3.2)
+- `backend/app/items_service.py`: added `filter_items(db, *, kind=None, q=None)` using
+  `func.lower(Item.title).contains()` for case-insensitive substring search, and
+  `group_by_status(items)` preserving canonical order (`learning` → `polishing` → `repertoire`).
+- `backend/app/main.py`: imported `filter_items`, `group_by_status`, `get_library`;
+  registered `GET /library` via `app.add_api_route`. Handler reads `?kind=` and `?q=`
+  query params, calls service functions, renders `library.html` with `active="library"`.
+- `backend/app/templates/library.html`: new template — filter form (kind dropdown, q input,
+  clear link), empty state with link to `/items/new`, grouped `<section>` sections per status
+  with `<li>` items and `.kind-badge` spans linking to `/items/{id}`.
+- `backend/app/static/style.css`: added `.library-filters`, `.library-empty`, `.library-group`,
+  `.library-list`, `.library-item`, `.kind-badge` (scoped colors for `kind-song`/`kind-exercise`).
+- `backend/tests/test_library.py`: 15 tests — 200 OK, nav active state, empty state & link,
+  group rendering by status, ?kind= filtering (song/exercise), ?q= case-insensitive substring,
+  combined filters, and empty status groups omitted.
+- Fix: wrapped `db.scalars(stmt).all()` in `list()` to satisfy mypy strict typing.

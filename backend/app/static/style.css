@@ -215,6 +215,116 @@ a:hover {
 /* Reduced motion                                                       */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Library page                                                         */
+/* ------------------------------------------------------------------ */
+
+.library-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-xl);
+}
+
+.library-filters label {
+    font-size: var(--font-sm);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.library-filters select,
+.library-filters input[type="text"] {
+    background: var(--bg-alt);
+    border: 1px solid #2e2a24;
+    color: var(--text);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-md);
+}
+
+.library-filters button {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.library-filters .clear-link {
+    padding: var(--space-sm) var(--space-md);
+    color: var(--text-dim);
+    font-size: var(--font-sm);
+}
+
+.library-empty {
+    text-align: center;
+    padding: var(--space-2xl) 0;
+    color: var(--text-dim);
+}
+
+.library-empty p {
+    margin-bottom: var(--space-md);
+    font-size: var(--font-lg);
+}
+
+.library-empty a {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.library-group {
+    margin-bottom: var(--space-xl);
+}
+
+.library-group h2 {
+    font-size: var(--font-xl);
+    color: var(--text-dim);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid #2e2a24;
+}
+
+.library-list {
+    list-style: none;
+}
+
+.library-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid #2e2a24;
+}
+
+.library-item a {
+    font-size: var(--font-md);
+}
+
+.kind-badge {
+    font-size: var(--font-sm);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.kind-badge.kind-song {
+    background: rgba(232, 160, 32, 0.15);
+    color: var(--accent);
+}
+
+.kind-badge.kind-exercise {
+    background: rgba(90, 154, 142, 0.15);
+    color: var(--secondary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

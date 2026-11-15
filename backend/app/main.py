@@ -14,7 +14,7 @@ from app.auth import get_login, post_login, post_logout
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
 from app.item_forms import get_edit_item, get_new_item, post_edit_item, post_new_item
-from app.items_service import get_item
+from app.items_service import filter_items, get_item, group_by_status
 from app.security import SecurityMiddleware
 from app.templating import env
 
@@ -76,10 +76,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             template.render({"item": item, "active": "items", "edit_link": edit_url})
         )
 
+    def get_library(request: Request) -> HTMLResponse:
+        kind = request.query_params.get("kind")
+        q = request.query_params.get("q")
+        with app.state.sessionmaker() as db:
+            try:
+                items = filter_items(db, kind=kind, q=q)
+                groups = group_by_status(items)
+            finally:
+                db.close()
+        template = env.get_template("library.html")
+        return HTMLResponse(
+            template.render(
+                {
+                    "active": "library",
+                    "groups": groups,
+                    "kind_filter": kind,
+                    "q": q,
+                }
+            )
+        )
+
     app.add_api_route("/login", get_login, methods=["GET"])
     app.add_api_route("/login", post_login, methods=["POST"])
     app.add_api_route("/logout", post_logout, methods=["POST"])
 
+    app.add_api_route("/library", get_library, methods=["GET"], response_model=None)
     app.add_api_route("/items/new", get_new_item, methods=["GET"], response_model=None)
     app.add_api_route("/items/new", post_new_item, methods=["POST"], response_model=None)
     app.add_api_route("/items/{item_id}", get_item_page, methods=["GET"])
