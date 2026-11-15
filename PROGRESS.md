@@ -35,3 +35,12 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   (routine_id, position) raises IntegrityError, deleting a routine sets session.routine_id to NULL,
   deleting an item cascades to takes, and deleting an item sets session_block.item_id to NULL while
   keeping item_title intact.
+
+## T04 — Styled 404 (SPEC 10.6)
+- `backend/app/main.py`: registered a 404 exception handler (`not_found_handler`) that checks the
+  request path — `/api/...` paths return JSON 404, all other unknown paths render `404.html` with
+  status 404. Imports updated with `HTTPException`, `Request`, `Response`.
+- `backend/app/templates/404.html`: extends `base.html`, shows "404" heading, "Page not found" text,
+  and a "Back to Home" link pointing to `/`.
+- `backend/tests/test_404.py`: 3 tests — HTML 404 for unknown paths (asserts 404 status, HTML content,
+  home link present), HTML 404 even with Accept: application/json, JSON 404 for `/api/` paths.

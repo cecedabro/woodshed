@@ -12,7 +12,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_models_practice.py -q
 - [x] T03: `app/templating.py` (one `Jinja2Templates`, filter `local_time` → "Tue 3 Nov, 19:05" in Europe/Amsterdam), `templates/base.html` with the nav of SPEC 10.1 (each page passes `active`), `static/style.css` with design tokens (docs/design.md), htmx loaded from `/static/vendor/htmx.min.js`, and a placeholder `/` page. Write `tests/test_layout.py`: `/` has all five nav links, only Home has `aria-current="page"`, htmx and style.css are linked; `local_time` for a winter and a summer UTC time.
   accept: cd backend && uv run pytest tests/test_layout.py -q
-- [ ] T04: Styled 404 (SPEC 10.6): unknown HTML paths render `templates/404.html` (extends base, link home) with 404; `/api/...` keeps JSON 404. Write `tests/test_404.py`.
+- [x] T04: Styled 404 (SPEC 10.6): unknown HTML paths render `templates/404.html` (extends base, link home) with 404; `/api/...` keeps JSON 404. Write `tests/test_404.py`.
   accept: cd backend && uv run pytest tests/test_404.py -q
 - [ ] T05: `app/security.py` (SPEC 10.5, 2.6): middleware adding the four headers with the exact CSP, and the Origin check (403 on POST with a foreign Origin; same origin and no Origin pass). Write `tests/test_security.py`.
   accept: cd backend && uv run pytest tests/test_security.py -q

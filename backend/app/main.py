@@ -3,8 +3,8 @@
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -26,6 +26,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     STATIC_DIR = Path(__file__).resolve().parents[0] / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.exception_handler(404)
+    async def not_found_handler(request: Request, exc: HTTPException) -> Response:
+        if request.url.path.startswith("/api/"):
+            return JSONResponse(
+                {"detail": "Not Found"},
+                status_code=404,
+            )
+        template = env.get_template("404.html")
+        return HTMLResponse(template.render({"active": None}), status_code=404)
 
     @app.get("/")
     def home() -> HTMLResponse:
