@@ -235,3 +235,18 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   tests for both thresholds via `POST /api/sessions`.
 - Gotcha: SQLAlchemy `DateTime(timezone=True)` cannot compare with float timestamps; must use
   `timedelta` for the cutoff and pass `datetime` objects to avoid "operator does not exist" errors.
+
+## T24 — Runner pure module (SPEC 5.1-5.4)
+- `backend/app/static/js/runner.js`: new pure module `createRunner(blocks, deps)` with `start`, `tick`,
+  `pause`, `resume`, `skip`, `addMinute`, `setBpm`, `finish`, `current`. Uses `createTimer` from
+  `timer.js` for per-block countdown. `start()` calls `deps.api.startSession()` (returns Promise);
+  `sessionId` is set in the `.then()` callback. `tick()` advances blocks when timer `isDone()`,
+  logs via `deps.api.logBlock()`, and calls `deps.api.finish()` when the last block ends.
+- `backend/tests/js/runner.test.js`: 8 tests — session start, tick remaining/played, pause+resume
+  state preservation, skip to next block, finish on last block completion, addMinute (addSeconds 60),
+  setBpm, and current() state shape.
+- Gotcha: `deps.api.startSession()` is asynchronous; tests must `await Promise.resolve()` after
+  `runner.start()` before calling `tick()` or asserting `sessionId`, otherwise `tick()` fires
+  during the microtask queue and `sessionId` is still `null`.
+- Gotcha: Runner uses `deps.now()` (not `Date.now()`) for all timer calls, and `deps.cue()` for
+  metronome beeps. Tests mock these via `{ api, now, cue }` deps object.

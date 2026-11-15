@@ -54,7 +54,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_sessions_api.py -q
 - [x] T23: `close_stale_sessions(db, now)` (SPEC 5.7), called by `POST /api/sessions` and the home page. Write `tests/test_stale_sessions.py` (5 h 59 min open stays open, 6 h 1 min gets `ended_at` = its last block's `ended_at`, or `started_at` when it has no blocks).
   accept: cd backend && uv run pytest tests/test_stale_sessions.py -q
-- [ ] T24: `static/js/runner.js` `createRunner` per §js with fake `api`, `now` and `cue`. Write `tests/js/runner.test.js`: start calls startSession; a finished block logs exact `played_seconds` and moves on; skip logs a partial block; setBpm changes the logged BPM; pause time is not logged; the last block triggers finish once.
+- [x] T24: `static/js/runner.js` `createRunner` per §js with fake `api`, `now` and `cue`. Write `tests/js/runner.test.js`: start calls startSession; a finished block logs exact `played_seconds` and moves on; skip logs a partial block; setBpm changes the logged BPM; pause time is not logged; the last block triggers finish once.
   accept: cd backend && node --test tests/js/runner.test.js
 - [ ] T25: Runner page `/run/{routine_id}` (SPEC 5.2): server renders blocks as JSON in `data-blocks` (item_id, title, planned_seconds, start BPM per SPEC 6.2) and, per block, links to the item's first tab, PDF and audio attachment; controls as real buttons with labels. Write `tests/test_runner_page.py` (parse `data-blocks` JSON and assert values; 404 for an unknown routine; module script tags).
   accept: cd backend && uv run pytest tests/test_runner_page.py -q
