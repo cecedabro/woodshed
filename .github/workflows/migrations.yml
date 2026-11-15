@@ -1,0 +1,37 @@
+# Human-owned (SPEC 11.5): the agent may not edit this file or tests/ci/.
+# Runs the migration checks against a throwaway Postgres. A release must not happen when it fails.
+name: migrations
+
+on:
+  pull_request:
+  push:
+    branches: [main, "agent/**"]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16.15
+        env:
+          POSTGRES_USER: migcheck
+          POSTGRES_PASSWORD: migcheck
+          POSTGRES_DB: migcheck
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U migcheck"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql+psycopg://migcheck:migcheck@localhost:5432/migcheck
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tags, for the upgrade-from-last-release check
+      - uses: astral-sh/setup-uv@v6
+      - name: Migration checks
+        run: bash tests/ci/check-migrations.sh

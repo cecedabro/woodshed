@@ -1,0 +1,43 @@
+# Human-owned (SPEC 11.4): build the image and smoke-test it like the cluster runs it.
+# The devbox has no Docker, so this is where the Dockerfile really gets tested.
+name: image
+
+on:
+  pull_request:
+  push:
+    branches: [main, "agent/**"]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.15
+        env:
+          POSTGRES_USER: smoke
+          POSTGRES_PASSWORD: smoke
+          POSTGRES_DB: smoke
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U smoke"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: woodshed:ci
+      - name: Lint the Dockerfile
+        run: docker run --rm -i hadolint/hadolint:v2.12.0 < Dockerfile
+      - name: Smoke test
+        env:
+          IMAGE: woodshed:ci
+          DB_URL: postgresql+psycopg://smoke:smoke@localhost:5432/smoke
+        run: bash tests/ci/smoke-image.sh
