@@ -6,6 +6,7 @@ Endpoints:
     POST /api/sessions/{id}/finish       — finish a session, return summary
 """
 
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -48,14 +49,14 @@ class FinishPayload(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _close_stale_sessions(db: Session, now: float) -> None:
+def _close_stale_sessions(db: Session, now: datetime) -> None:
     """Mark sessions idle for >6 hours as finished at their last block end time."""
-    six_hours = 6 * 3600
+    cutoff = now - timedelta(hours=6)
     stale = (
         db.execute(
             select(PracticeSession).where(
                 PracticeSession.ended_at.is_(None),
-                PracticeSession.started_at < now - six_hours,
+                PracticeSession.started_at < cutoff,
             )
         )
         .scalars()
@@ -63,6 +64,8 @@ def _close_stale_sessions(db: Session, now: float) -> None:
     )
     for session in stale:
         session.ended_at = session.blocks[-1].ended_at if session.blocks else session.started_at
+    if stale:
+        db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +80,9 @@ def create_session(
     _login: None = Depends(require_login),
 ) -> dict[str, Any]:
     """Create a new practice session (SPEC 5.4)."""
-    session = PracticeSession(routine_id=payload.routine_id)
+    now = clock_now()
+    _close_stale_sessions(db, now)
+    session = PracticeSession(routine_id=payload.routine_id, started_at=now)
     db.add(session)
     db.commit()
     db.refresh(session)

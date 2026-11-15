@@ -224,3 +224,14 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   otherwise `elapsed_since_start` clamping pushes blocks below 10s threshold.
 - Gotcha: `base_time` was redefined inside the `with` block, shadowing the outer `base_time`;
   the `base_time` used by `_block_elapsed` in the test was wrong, causing a false clamping failure.
+
+## T23 — Stale sessions (SPEC 5.7)
+- `backend/app/sessions.py`: `_close_stale_sessions(db, now)` now accepts `datetime` (was `float`),
+  compares `started_at < now - timedelta(hours=6)`, and commits when sessions are closed.
+  `create_session` calls `_close_stale_sessions` before creating the new session, using `clock_now()`
+  for both the stale check and the new session's `started_at`.
+- `backend/tests/test_stale_sessions.py`: 10 tests — 5h59 stays open, 6h01 closes via block end
+  / session start, multiple stale sessions, already-ended not modified, API-integrated boundary
+  tests for both thresholds via `POST /api/sessions`.
+- Gotcha: SQLAlchemy `DateTime(timezone=True)` cannot compare with float timestamps; must use
+  `timedelta` for the cutoff and pass `datetime` objects to avoid "operator does not exist" errors.

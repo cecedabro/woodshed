@@ -52,7 +52,7 @@ test fixtures, CI.
   accept: cd backend && node --test tests/js/metronome.test.js
 - [x] T22: Sessions API (SPEC 5.4–5.6, docs/backend.md §sessions) in `app/sessions.py`. Write `tests/test_sessions_api.py`: create; log a block (row values); clamp to elapsed + 60 (monkeypatched clock); 9 s → `{"stored": false}`; logging with a BPM updates `item.current_bpm`; finish returns the summary; 404 for an unknown session; logged out → 401.
   accept: cd backend && uv run pytest tests/test_sessions_api.py -q
-- [ ] T23: `close_stale_sessions(db, now)` (SPEC 5.7), called by `POST /api/sessions` and the home page. Write `tests/test_stale_sessions.py` (5 h 59 min open stays open, 6 h 1 min gets `ended_at` = its last block's `ended_at`, or `started_at` when it has no blocks).
+- [x] T23: `close_stale_sessions(db, now)` (SPEC 5.7), called by `POST /api/sessions` and the home page. Write `tests/test_stale_sessions.py` (5 h 59 min open stays open, 6 h 1 min gets `ended_at` = its last block's `ended_at`, or `started_at` when it has no blocks).
   accept: cd backend && uv run pytest tests/test_stale_sessions.py -q
 - [ ] T24: `static/js/runner.js` `createRunner` per §js with fake `api`, `now` and `cue`. Write `tests/js/runner.test.js`: start calls startSession; a finished block logs exact `played_seconds` and moves on; skip logs a partial block; setBpm changes the logged BPM; pause time is not logged; the last block triggers finish once.
   accept: cd backend && node --test tests/js/runner.test.js
