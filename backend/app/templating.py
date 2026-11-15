@@ -1,9 +1,11 @@
 """Jinja2 environment and template filters (SPEC 10.1)."""
 
 from datetime import datetime
+from html import escape
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
+from markupsafe import Markup
 
 from app.clock import LOCAL_TZ
 
@@ -32,3 +34,15 @@ def local_time(dt: datetime) -> str:
 
 
 env.filters["local_time"] = local_time
+
+
+def notes_br(text: str) -> str:
+    """Escape HTML then convert newlines to <br> tags.
+
+    Returns a Markup object so Jinja2 does not double-escape.
+    """
+    escaped = escape(text, quote=True)
+    return Markup(escaped.replace("\n", "<br>"))  # nosec: B704 — input is escaped above
+
+
+env.filters["notes_br"] = notes_br

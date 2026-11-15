@@ -14,6 +14,7 @@ from app.auth import get_login, post_login, post_logout
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
 from app.item_forms import get_edit_item, get_new_item, post_edit_item, post_new_item
+from app.items_service import get_item
 from app.security import SecurityMiddleware
 from app.templating import env
 
@@ -61,12 +62,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return JSONResponse({"status": "unavailable"}, status_code=503)
         return JSONResponse({"status": "ready"})
 
+    def get_item_page(item_id: int, request: Request) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                item = get_item(db, item_id)
+            finally:
+                db.close()
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        edit_url = f"/items/{item.id}/edit"
+        template = env.get_template("items_detail.html")
+        return HTMLResponse(
+            template.render({"item": item, "active": "items", "edit_link": edit_url})
+        )
+
     app.add_api_route("/login", get_login, methods=["GET"])
     app.add_api_route("/login", post_login, methods=["POST"])
     app.add_api_route("/logout", post_logout, methods=["POST"])
 
     app.add_api_route("/items/new", get_new_item, methods=["GET"], response_model=None)
     app.add_api_route("/items/new", post_new_item, methods=["POST"], response_model=None)
+    app.add_api_route("/items/{item_id}", get_item_page, methods=["GET"])
     app.add_api_route("/items/{item_id}/edit", get_edit_item, methods=["GET"], response_model=None)
     app.add_api_route(
         "/items/{item_id}/edit", post_edit_item, methods=["POST"], response_model=None

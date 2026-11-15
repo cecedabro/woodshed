@@ -26,7 +26,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_api_items.py -q
 - [x] T10: Item forms (SPEC 3.3): `/items/new` and `/items/{id}/edit` (GET form, POST → 303 to `/items/{id}`), reusing `ItemIn`; errors re-render with 422 next to the field. Write `tests/test_item_forms.py`.
   accept: cd backend && uv run pytest tests/test_item_forms.py -q
-- [ ] T11: Item page (SPEC 3.4, without files, takes and tempo for now): all fields, original link with `target="_blank" rel="noopener"`, notes with line breaks kept (escaped, then newlines → `<br>`), edit link, styled 404 for an unknown id. Write `tests/test_item_page.py` (including that `<script>` in notes is escaped).
+- [x] T11: Item page (SPEC 3.4, without files, takes and tempo for now): all fields, original link with `target="_blank" rel="noopener"`, notes with line breaks kept (escaped, then newlines → `<br>`), edit link, styled 404 for an unknown id. Write `tests/test_item_page.py` (including that `<script>` in notes is escaped).
   accept: cd backend && uv run pytest tests/test_item_page.py -q
 - [ ] T12: `/library` (SPEC 3.2): grouped learning / polishing / repertoire, `?kind=` filter, `?q=` case-insensitive title search, empty state with a link to `/items/new`. Write `tests/test_library.py`.
   accept: cd backend && uv run pytest tests/test_library.py -q

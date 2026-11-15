@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Woodshed — {{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="item-detail">
+    <div class="item-header">
+        <h1>{{ item.title }}</h1>
+        {% if edit_link %}
+        <a href="{{ edit_link }}" class="edit-link">Edit</a>
+        {% endif %}
+    </div>
+
+    <dl class="item-fields">
+        <div class="field-row">
+            <dt>Kind</dt>
+            <dd>{{ item.kind|capitalize }}</dd>
+        </div>
+
+        {% if item.artist %}
+        <div class="field-row">
+            <dt>Artist</dt>
+            <dd>{{ item.artist }}</dd>
+        </div>
+        {% endif %}
+
+        <div class="field-row">
+            <dt>Status</dt>
+            <dd>{{ item.status|capitalize }}</dd>
+        </div>
+
+        {% if item.current_bpm %}
+        <div class="field-row">
+            <dt>Current BPM</dt>
+            <dd>{{ item.current_bpm }}</dd>
+        </div>
+        {% endif %}
+
+        {% if item.original_url %}
+        <div class="field-row">
+            <dt>Original</dt>
+            <dd><a href="{{ item.original_url }}" target="_blank" rel="noopener">{{ item.original_url }}</a></dd>
+        </div>
+        {% endif %}
+
+        {% if item.notes %}
+        <div class="field-row">
+            <dt>Notes</dt>
+            <dd class="notes" id="notes">{{ item.notes|notes_br|safe }}</dd>
+        </div>
+        {% endif %}
+
+        <div class="field-row">
+            <dt>Created</dt>
+            <dd>{{ item.created_at|local_time }}</dd>
+        </div>
+
+        <div class="field-row">
+            <dt>Updated</dt>
+            <dd>{{ item.updated_at|local_time }}</dd>
+        </div>
+    </dl>
+</div>
+{% endblock %}
