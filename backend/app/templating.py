@@ -16,6 +16,7 @@ env = Environment(
     autoescape=True,
     enable_async=False,
 )
+env.globals["enumerate"] = enumerate
 
 
 def local_time(dt: datetime) -> str:

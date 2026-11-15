@@ -548,6 +548,38 @@ input.error, select.error, textarea.error {
     border-color: var(--accent-dim);
 }
 
+/* Progress chart */
+
+.progress-chart {
+    margin-bottom: var(--space-xl);
+    overflow-x: auto;
+}
+
+.progress-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.progress-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.progress-table th,
+.progress-table td {
+    padding: var(--space-sm) var(--space-md);
+    text-align: left;
+    border-bottom: 1px solid var(--bg-alt);
+}
+
+.progress-table th {
+    color: var(--text-dim);
+    font-size: var(--font-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

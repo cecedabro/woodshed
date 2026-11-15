@@ -70,3 +70,20 @@ def minutes_per_week(db: Session, mondays: Sequence[date]) -> dict[date, int]:
             totals[monday] += played_seconds // 60
 
     return totals
+
+
+def weeks_12(db: Session) -> list[dict[str, int | date]]:
+    """Return the last 12 weeks of data for the /progress page.
+
+    Returns a list of dicts with keys ``monday``, ``minutes``, ordered
+    oldest-first (the oldest week is index 0).
+    """
+    now = datetime.now(LOCAL_TZ)
+    this_monday = week_start(now)
+
+    # Build the 12 mondays (oldest first).
+    mondays = [this_monday - timedelta(weeks=11 - i) for i in range(12)]
+
+    totals = minutes_per_week(db, mondays)
+
+    return [{"monday": m, "minutes": totals.get(m, 0)} for m in mondays]

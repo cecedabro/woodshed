@@ -662,6 +662,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_api_route("/settings", get_settings, methods=["GET"], response_model=None)
     app.add_api_route("/settings", post_settings, methods=["POST"], response_model=None)
 
+    def get_progress(
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                # Weekly goal
+                goal_row = db.execute(
+                    text("SELECT value FROM setting WHERE key = 'weekly_goal_minutes'")
+                ).scalar_one_or_none()
+                goal = int(goal_row) if goal_row else 120
+
+                # Last 12 weeks
+                from app.stats import weeks_12
+
+                week_data = weeks_12(db)
+            finally:
+                db.close()
+
+        template = env.get_template("progress.html")
+        return HTMLResponse(
+            template.render(
+                {
+                    "active": "progress",
+                    "weeks": week_data,
+                    "goal": goal,
+                }
+            )
+        )
+
+    app.add_api_route("/progress", get_progress, methods=["GET"], response_model=None)
+
     app.include_router(api_router)
     app.include_router(sessions_router)
 
