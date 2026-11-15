@@ -5,6 +5,11 @@
 {% block content %}
 <h1>Practice</h1>
 
+<section class="home-progress">
+    <progress value="{{ week_minutes }}" max="{{ goal }}"></progress>
+    <span>{{ week_minutes }} of {{ goal }} min</span>
+</section>
+
 {% if routines %}
 <ul class="home-routine-list">
     {% for r in routines %}

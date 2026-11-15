@@ -308,3 +308,20 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - Gotcha: DST weeks in 2026 contain Sundays (Mar 29 spring-forward, Oct 25 fall-back). The weeks
   start on the *previous* Monday (Mar 23 / Oct 19), not the following Monday. Initial test dates
   used the wrong Mondays, producing 168h instead of 167/169.
+
+## T31 — `minutes_per_week` and home progress bar (SPEC 9.2, 9.4)
+- `backend/app/stats.py`: added `minutes_per_week(db, mondays)` — fetches session blocks via SQL
+  (`SELECT ended_at, played_seconds FROM session_block`), converts `ended_at` to `LOCAL_TZ`,
+  computes week Monday via `local_dt.weekday()`, sums `played_seconds // 60` per Monday.
+  Also fixed `Sequence` import (moved to `collections.abc`) and removed unused `SessionBlock` import.
+- `backend/app/main.py`: `home` route now fetches `weekly_goal_minutes` from `setting` table
+  (default 120), calls `week_start(now_local)` and `minutes_per_week(db, [monday])`, passes
+  `week_minutes` and `goal` to template.
+- `backend/app/templates/home.html`: added `<section class="weekly-goal">` with `<progress
+  value="{{ week_minutes }}" max="{{ goal }}">` and "X of Y min" text.
+- `backend/tests/test_week_totals.py`: 16 tests — empty DB, empty list, rounding down, sub-60s
+  zero contribution, Sunday night/current week, Monday morning/next week, exact Monday midnight,
+  multi-week accumulation, zero/NULL played_seconds, DST spring-forward, and 4 home bar rendering
+  tests (progress element, text, data reflection, custom goal).
+- Gotcha: `datetime` import was initially missing from `home` route (only `UTC` was imported),
+  causing `NameError` at runtime. Fixed by importing `datetime` alongside `UTC`.

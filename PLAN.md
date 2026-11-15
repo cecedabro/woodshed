@@ -70,7 +70,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_weeks.py -q
 - [x] T30: Weekly goal (SPEC 9.1): `setting` row `weekly_goal_minutes`, default 120; `/settings` form (0–10080, else 422). Write `tests/test_settings.py`.
   accept: cd backend && uv run pytest tests/test_settings.py -q
-- [ ] T31: `minutes_per_week(db, mondays)` and the home progress bar (SPEC 9.2): `<progress>` with value and max plus "75 of 120 min". Write `tests/test_week_totals.py` with blocks around a week boundary (exact minutes, rounding down).
+- [x] T31: `minutes_per_week(db, mondays)` and the home progress bar (SPEC 9.2): `<progress>` with value and max plus "75 of 120 min". Write `tests/test_week_totals.py` with blocks around a week boundary (exact minutes, rounding down).
   accept: cd backend && uv run pytest tests/test_week_totals.py -q
 - [ ] T32: `/progress` part 1 (SPEC 9.2, 9.3): last 12 weeks as an inline SVG bar chart with the goal line, plus a text table for screen readers. Write `tests/test_progress_weeks.py` (12 bars, the right heights relative to the max, an empty week is 0; the words "streak" and "day in a row" appear nowhere on `/` or `/progress`).
   accept: cd backend && uv run pytest tests/test_progress_weeks.py -q

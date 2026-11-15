@@ -51,6 +51,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/")
     def home(login: None = Depends(require_login)) -> HTMLResponse:
+        from datetime import datetime
+
+        from app.clock import LOCAL_TZ
+        from app.stats import minutes_per_week, week_start
+
         with app.state.sessionmaker() as db:
             try:
                 rows = db.execute(
@@ -65,8 +70,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "ORDER BY COALESCE(MAX(ps.ended_at), r.created_at) DESC"
                     )
                 ).fetchall()
+
+                # Weekly goal and progress (SPEC 9.2)
+                goal_row = db.execute(
+                    text("SELECT value FROM setting WHERE key = 'weekly_goal_minutes'")
+                ).scalar_one_or_none()
+                goal = int(goal_row) if goal_row else 120
+
+                now_local = datetime.now(LOCAL_TZ)
+                this_monday = week_start(now_local)
+                week_mins = minutes_per_week(db, [this_monday])
+                week_minutes = week_mins.get(this_monday, 0)
             finally:
                 db.close()
+
         routines = [
             {
                 "id": row.id,
@@ -80,7 +97,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if routines:
             routines[0]["most_recent"] = True
         template = env.get_template("home.html")
-        return HTMLResponse(template.render({"active": "home", "routines": routines}))
+        return HTMLResponse(
+            template.render(
+                {
+                    "active": "home",
+                    "routines": routines,
+                    "week_minutes": week_minutes,
+                    "goal": goal,
+                }
+            )
+        )
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
