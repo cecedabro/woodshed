@@ -36,7 +36,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_attachments.py -q
 - [x] T15: `GET /media/{kind}/{id}` (SPEC 10.4) for `attachment` and `take` rows: stored content type, Range support, 404 for unknown id or kind, 401/303 when logged out. Write `tests/test_media_serving.py` (full GET bytes equal; `Range: bytes=0-3` → 206 and 4 bytes with `Content-Range`).
   accept: cd backend && uv run pytest tests/test_media_serving.py -q
-- [ ] T16: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment).
+- [~] T16: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment). — skipped: $ cd backend && uv run pytest tests/test_tab_page.py -q && node --check backend/app/static/js/tab.js  (exit 1)
   accept: cd backend && uv run pytest tests/test_tab_page.py -q && node --check backend/app/static/js/tab.js
 - [ ] T17: Delete item (SPEC 3.7): a confirm page `GET /items/{id}/delete` and `POST` that deletes the item, its attachment and take files, and redirects to `/library`. Write `tests/test_item_delete.py` (files gone, logged session blocks keep `item_title`).
   accept: cd backend && uv run pytest tests/test_item_delete.py -q
