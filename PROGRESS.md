@@ -21,3 +21,17 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   so `env.py` does not overwrite the test DB URL with `$DATABASE_URL` env var.
 - Gotcha: `env.py:12-13` unconditionally reads `$DATABASE_URL` from the environment; the
   `migrated` fixture must set `keep_url` to point Alembic at the test DB.
+
+## T02 — Models and one migration (2026-11-15)
+- `backend/app/models.py`: added `Routine`, `RoutineBlock`, `PracticeSession`, `SessionBlock`,
+  `Take` models. `RoutineBlock` has a `UniqueConstraint` on `(routine_id, position)`.
+  `PracticeSession.routine_id` and `SessionBlock.item_id` use `SET NULL` on delete.
+  `Take.session_block_id` uses `SET NULL` on delete. `SessionBlock` has indexes on `ended_at`
+  and `(item_id, ended_at)`. Added `Item.routine_blocks` and `Item.takes` relationships via
+  late binding (string-based `relationship()`).
+- `backend/alembic/versions/b3cda3472b74_practice.py`: migration creating all five tables with
+  correct FK directions, constraints, indexes, and cascade/SET NULL rules.
+- `backend/tests/test_models_practice.py`: 5 tests — routine with two ordered blocks, duplicate
+  (routine_id, position) raises IntegrityError, deleting a routine sets session.routine_id to NULL,
+  deleting an item cascades to takes, and deleting an item sets session_block.item_id to NULL while
+  keeping item_title intact.
