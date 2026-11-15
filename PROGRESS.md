@@ -191,3 +191,13 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   `db.expunge(routine)` before `db.get()`. `TestClient.post()` follows redirects; 303 checks
   use `follow_redirects=False`. `Request.form()` values can be `UploadFile | str`; `.strip()`
   guarded with `isinstance(raw_name, str)`.
+
+## T20 — Timer pure module (SPEC 5.2, frontend.md §js)
+- `backend/app/static/js/timer.js`: pure module `createTimer(plannedSeconds)` returning an object
+  with `start(now)`, `pause(now)`, `resume(now)`, `addSeconds(n)`, `remaining(now)`, `played(now)`,
+  `isDone(now)`, `isRunning()`. Pausing freezes both remaining and played; resume continues
+  decrementing remaining from the paused value. `remaining` clamped to 0 (never negative).
+- `backend/tests/js/timer.test.js`: 10 tests — remaining/played while running, pause excludes
+  time, resume continues from pause point, addSeconds(60), isDone at exactly 0, remaining never
+  negative, completed timer stays at 0, played only counts actual running time, initial not-started
+  state, pause-then-addSeconds interaction.

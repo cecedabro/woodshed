@@ -46,7 +46,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_routines.py -q
 - [~] T19: Routine editor (SPEC 4.2) at `/routines/{id}/edit` with HTMX: add a block (item select, minutes, optional BPM), remove, move up/down; each action returns the updated block list fragment; positions stay 0..n-1 without gaps. Write `tests/test_routine_editor.py` (move first block down twice → order; remove middle → positions renumbered; 31st block → 422). — skipped: agent made no changes
   accept: cd backend && uv run pytest tests/test_routine_editor.py -q
-- [ ] T20: `static/js/timer.js` per docs/frontend.md §js. Write `tests/js/timer.test.js`: remaining and played while running, pause excludes time, resume, addSeconds(60), isDone exactly at 0, remaining never negative.
+- [x] T20: `static/js/timer.js` per docs/frontend.md §js. Write `tests/js/timer.test.js`: remaining and played while running, pause excludes time, resume, addSeconds(60), isDone exactly at 0, remaining never negative.
   accept: cd backend && node --test tests/js/timer.test.js
 - [ ] T21: `static/js/metronome.js` pure functions `clampBpm`, `beatTimes`, `tapTempo` per §js (the `Metronome` class comes in T26). Write `tests/js/metronome.test.js`: 120 BPM beats at 0.5 s spacing; accents every 4th beat and every 3rd with beatsPerBar 3; `fromBeat`/`untilTime` windows; taps at 500 ms intervals → 120; a 2.5 s gap restarts; fewer than 2 taps → null; clamp 10 → 20, 999 → 400.
   accept: cd backend && node --test tests/js/metronome.test.js
