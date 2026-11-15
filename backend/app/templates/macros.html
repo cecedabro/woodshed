@@ -1,3 +1,38 @@
+{% macro render_tempo_svg(history) -%}
+{% if history %}
+  {% set cw = 400 %}
+  {% set ch = 100 %}
+  {% set pt = 10 %}
+  {% set pb = 20 %}
+  {% set pl = 30 %}
+  {% set pr = 10 %}
+  {% set uw = cw - pl - pr %}
+  {% set uh = ch - pt - pb %}
+  {% set points = history|length %}
+  {% set max_bpm = history|map(attribute=1)|max %}
+  {% set min_bpm = history|map(attribute=1)|min %}
+  {% set bpm_range = max_bpm - min_bpm if max_bpm != min_bpm else 1 %}
+  <svg xmlns="http://www.w3.org/2000/svg"
+       viewBox="0 0 {{ cw }} {{ ch }}"
+       width="100%" height="{{ uh }}"
+       class="tempo-svg"
+       role="img"
+       aria-label="Tempo history">
+      {% for i, (day, bpm) in enumerate(history) %}
+        {% set x = pl + (i / (points - 1) * uw if points > 1 else uw / 2) %}
+        {% set y = pt + uh - ((bpm - min_bpm) / bpm_range * uh) %}
+        {% if i > 0 %}
+          {% set px = pl + ((i - 1) / (points - 1) * uw if points > 1 else uw / 2) %}
+          {% set py = pt + uh - ((history[i-1][1] - min_bpm) / bpm_range * uh) %}
+          <line x1="{{ px }}" y1="{{ py }}" x2="{{ x }}" y2="{{ y }}"
+                stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+        {% endif %}
+        <circle cx="{{ x }}" cy="{{ y }}" r="3" fill="var(--accent)"/>
+      {% endfor %}
+  </svg>
+{% endif %}
+{%- endmacro %}
+
 {% macro render_bar_chart(weeks, goal) -%}
 {% set cw = 720 %}
 {% set ch = 240 %}

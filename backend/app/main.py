@@ -122,11 +122,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse({"status": "ready"})
 
     def get_item_page(item_id: int, request: Request) -> HTMLResponse:
+        from app.stats import tempo_history as _tempo_history
+
         with app.state.sessionmaker() as db:
             try:
                 item = db.scalar(
                     select(Item).where(Item.id == item_id).options(joinedload(Item.attachments))
                 )
+                tempo = _tempo_history(db, item_id)
             finally:
                 db.close()
         if not item:
@@ -134,7 +137,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         edit_url = f"/items/{item.id}/edit"
         template = env.get_template("items_detail.html")
         return HTMLResponse(
-            template.render({"item": item, "active": "items", "edit_link": edit_url})
+            template.render(
+                {"item": item, "active": "items", "edit_link": edit_url, "tempo_history": tempo}
+            )
         )
 
     def get_library(request: Request) -> HTMLResponse:

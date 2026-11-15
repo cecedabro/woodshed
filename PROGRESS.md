@@ -297,6 +297,13 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - Fix: regex for `data-routine-id` uses double quotes to match HTML attribute syntax.
   the metronome sets `osc.frequency.value` after connecting the gain.
 
+## T33 — Tempo history per item (SPEC 7.1)
+- `backend/app/stats.py`: added `tempo_history(db, item_id)` — SQL query groups `SessionBlock` rows by the local date of `ended_at` (`date(ended_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Amsterdam')`) and returns `MAX(bpm)` per day, ignoring NULL bpm and NULL ended_at. Returns `[(date, max_bpm)]` ordered oldest-first.
+- `backend/app/main.py`: `get_item_page` now calls `_tempo_history(db, item_id)` and passes `tempo_history` to the template.
+- `backend/app/templates/macros.html`: added `{% macro render_tempo_svg(history) %}` to generate an inline SVG line chart with dynamic axis scaling based on BPM min/max.
+- `backend/app/templates/items_detail.html`: imports the macro and renders a "Tempo History" section (joined BPM text like "60 → 72 → 84" + SVG chart) when `tempo_history` is not empty.
+- `backend/tests/test_tempo_history.py`: 12 tests — empty DB, no matching blocks, NULL BPM ignored, max BPM same day, oldest-first ordering, mixed NULL/valid, single block, all NULL, and page rendering (text + SVG).
+
 ## T29 — Week maths `week_start` and `week_bounds_utc` (SPEC 9.4)
 - `backend/app/stats.py`: new module with two pure functions — `week_start(local_dt)` returns the
   Monday `date` of the week containing the given datetime; `week_bounds_utc(monday)` returns the

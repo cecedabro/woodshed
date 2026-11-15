@@ -72,6 +72,29 @@ def minutes_per_week(db: Session, mondays: Sequence[date]) -> dict[date, int]:
     return totals
 
 
+def tempo_history(db: Session, item_id: int) -> list[tuple[date, int]]:
+    """Return per-day maximum BPM for *item_id*, oldest first (SPEC 7.1).
+
+    Groups ``SessionBlock`` rows by the local date of ``ended_at`` and
+    returns ``(date, max_bpm)`` tuples, ignoring NULL bpm values.
+    """
+    rows = db.execute(
+        text(
+            "SELECT date(ended_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Amsterdam') "
+            "AS day, MAX(bpm) AS bpm "
+            "FROM session_block "
+            "WHERE item_id = :item_id "
+            "  AND ended_at IS NOT NULL "
+            "  AND bpm IS NOT NULL "
+            "GROUP BY day "
+            "ORDER BY day ASC"
+        ),
+        {"item_id": item_id},
+    ).fetchall()
+
+    return [(row[0], row[1]) for row in rows]
+
+
 def weeks_12(db: Session) -> list[dict[str, int | date]]:
     """Return the last 12 weeks of data for the /progress page.
 

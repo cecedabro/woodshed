@@ -74,7 +74,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_week_totals.py -q
 - [x] T32: `/progress` part 1 (SPEC 9.2, 9.3): last 12 weeks as an inline SVG bar chart with the goal line, plus a text table for screen readers. Write `tests/test_progress_weeks.py` (12 bars, the right heights relative to the max, an empty week is 0; the words "streak" and "day in a row" appear nowhere on `/` or `/progress`).
   accept: cd backend && uv run pytest tests/test_progress_weeks.py -q
-- [ ] T33: Tempo history (SPEC 7.1): `tempo_history(db, item_id)` → [(local date, max bpm)], the text "60 → 72 → 84" and a small inline SVG line on `/items/{id}`. Write `tests/test_tempo_history.py` (two blocks on one day → max; null BPMs ignored; order oldest first).
+- [x] T33: Tempo history (SPEC 7.1): `tempo_history(db, item_id)` → [(local date, max bpm)], the text "60 → 72 → 84" and a small inline SVG line on `/items/{id}`. Write `tests/test_tempo_history.py` (two blocks on one day → max; null BPMs ignored; order oldest first).
   accept: cd backend && uv run pytest tests/test_tempo_history.py -q
 - [ ] T34: `/progress` part 2 (SPEC 7.2): table of items with a BPM in the last 90 days, first and latest BPM and "+24 bpm". Write `tests/test_progress_tempo.py` (91-day-old block excluded).
   accept: cd backend && uv run pytest tests/test_progress_tempo.py -q
