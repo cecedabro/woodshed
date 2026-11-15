@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Woodshed{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" {% if active == "home" %}aria-current="page"{% endif %}>Home</a>
+        <a href="/library" {% if active == "library" %}aria-current="page"{% endif %}>Library</a>
+        <a href="/routines" {% if active == "routines" %}aria-current="page"{% endif %}>Routines</a>
+        <a href="/progress" {% if active == "progress" %}aria-current="page"{% endif %}>Progress</a>
+        <a href="/settings" {% if active == "settings" %}aria-current="page"{% endif %}>Settings</a>
+    </nav>
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="/static/vendor/htmx.min.js"></script>
+</body>
+</html>

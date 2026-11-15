@@ -1,14 +1,17 @@
 """App factory. Routers are included here; keep route code in their own modules."""
 
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
+from app.templating import env
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -20,6 +23,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = make_engine(settings.DATABASE_URL)
     app.state.sessionmaker = make_sessionmaker(app.state.engine)
+
+    STATIC_DIR = Path(__file__).resolve().parents[0] / "static"
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.get("/")
+    def home() -> HTMLResponse:
+        template = env.get_template("home.html")
+        return HTMLResponse(template.render({"active": "home"}))
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
