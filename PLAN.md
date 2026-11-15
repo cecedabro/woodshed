@@ -22,7 +22,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_login.py -q && cd backend && uv run pytest -q
 - [x] T08: Login rate limit (SPEC 2.5): failed-attempt timestamps on `app.state`, time from `clock.now()`. Write `tests/test_login_ratelimit.py`: the 11th attempt inside 15 min is 429 even with the right password; after 15 min (monkeypatched clock) the right password works.
   accept: cd backend && uv run pytest tests/test_login_ratelimit.py -q
-- [ ] T09: Item service + JSON API (SPEC 3.1, 3.8) in `app/items_service.py` and `app/api.py`: pydantic `ItemIn` with every 3.1 rule, `POST /api/items` → 201, `GET /api/items/{id}` → 200/404. Write `tests/test_api_items.py`: create and read back every field; 422 for title "" and 201 chars, BPM 19 and 401, `ftp://` URL, unknown status; 20 and 400 BPM pass; nothing stored on 422.
+- [x] T09: Item service + JSON API (SPEC 3.1, 3.8) in `app/items_service.py` and `app/api.py`: pydantic `ItemIn` with every 3.1 rule, `POST /api/items` → 201, `GET /api/items/{id}` → 200/404. Write `tests/test_api_items.py`: create and read back every field; 422 for title "" and 201 chars, BPM 19 and 401, `ftp://` URL, unknown status; 20 and 400 BPM pass; nothing stored on 422.
   accept: cd backend && uv run pytest tests/test_api_items.py -q
 - [ ] T10: Item forms (SPEC 3.3): `/items/new` and `/items/{id}/edit` (GET form, POST → 303 to `/items/{id}`), reusing `ItemIn`; errors re-render with 422 next to the field. Write `tests/test_item_forms.py`.
   accept: cd backend && uv run pytest tests/test_item_forms.py -q

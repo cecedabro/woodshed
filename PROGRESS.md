@@ -80,3 +80,21 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   password succeeds after 15-minute window (verified via `clock.now` monkeypatch).
 - Gotcha: `app.add_api_route` is required instead of wrapper functions — manual calls of
   `Depends`-backed handlers bypass dependency injection and crash the response serializer.
+
+## T09 — Item service + JSON API (SPEC 3.1, 3.8)
+- `backend/app/items_service.py`: Pydantic `ItemIn` model with validators for kind (song/exercise),
+  title (1-200 chars, no blanks), status (learning/polishing/repertoire, default "learning"),
+  current_bpm (20-400), original_url (http/https only), notes (≤20k chars). `create_item(db, data)`
+  persists via `db.flush()` + `db.refresh()`. `get_item(db, id)` uses `select(Item).where(Item.id==id)`.
+- `backend/app/api.py`: `POST /api/items` → 201 JSON, `GET /api/items/{id}` → 200/404. Imports
+  `get_db` from `app.db`. Added `db.commit()` after `create_item` so the item survives the
+  per-request session rollback.
+- `backend/app/main.py`: imported and included `api_router` via `app.include_router(api_router)`.
+- `backend/tests/test_api_items.py`: 18 tests — valid creation (all fields, minimal with defaults,
+  http/https URLs), boundary BPM (19→422, 20→201, 400→201, 401→422), title length (""→422, 200→201,
+  201→422), ftp URL→422, unknown status/kind→422, GET existing→200, GET missing→404. Count assertions
+  use `.scalars().first() or 0` because empty tables return `None` from `scalar()`.
+- Gotcha: The per-request `get_db` session context manager rolls back uncommitted data on exit.
+  Added `db.commit()` in the POST route handler so seeded items survive for subsequent GET/migration checks.
+- Gotcha: `db.execute(select(Item)).scalar()` returns `None` (not `0`) when no rows exist.
+  Used `.scalars().first() or 0` in count assertions.
