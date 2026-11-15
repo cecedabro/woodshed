@@ -30,7 +30,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_item_page.py -q
 - [x] T12: `/library` (SPEC 3.2): grouped learning / polishing / repertoire, `?kind=` filter, `?q=` case-insensitive title search, empty state with a link to `/items/new`. Write `tests/test_library.py`.
   accept: cd backend && uv run pytest tests/test_library.py -q
-- [ ] T13: `app/media.py` (docs/backend.md §media): `kind_for_filename(name)` per SPEC 3.5, `save_upload(upload, subdir, limit_bytes, media_dir) -> (stored_name, size)` copying in 1 MiB chunks and raising a `TooLarge` error (partial file removed), `delete_file(...)`. Write `tests/test_media.py` with real files under `tmp_path` (limit exact = ok, limit + 1 = TooLarge and no file left; `.GP5` upper case → tab; `.exe` → None).
+- [x] T13: `app/media.py` (docs/backend.md §media): `kind_for_filename(name)` per SPEC 3.5, `save_upload(upload, subdir, limit_bytes, media_dir) -> (stored_name, size)` copying in 1 MiB chunks and raising a `TooLarge` error (partial file removed), `delete_file(...)`. Write `tests/test_media.py` with real files under `tmp_path` (limit exact = ok, limit + 1 = TooLarge and no file left; `.GP5` upper case → tab; `.exe` → None).
   accept: cd backend && uv run pytest tests/test_media.py -q
 - [ ] T14: Attachments (SPEC 3.5): upload form on the item page (`POST /items/{id}/attachments`, multipart `file` + optional `label`), list on the item page grouped tab / PDF / audio, delete button. 422 for a bad extension, 413 over 100 MB (use a small limit from settings in the test: add `MAX_ATTACHMENT_BYTES` to Settings, default 100 MB). Write `tests/test_attachments.py` (row and file on disk; delete removes both).
   accept: cd backend && uv run pytest tests/test_attachments.py -q

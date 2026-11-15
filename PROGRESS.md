@@ -115,3 +115,14 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   group rendering by status, ?kind= filtering (song/exercise), ?q= case-insensitive substring,
   combined filters, and empty status groups omitted.
 - Fix: wrapped `db.scalars(stmt).all()` in `list()` to satisfy mypy strict typing.
+
+## T13 — Media helpers (SPEC 3.5, backend.md §media)
+- `backend/app/media.py`: `kind_for_filename(name)` maps file extensions (case-insensitive) to
+  attachment kind (`tab`/`pdf`/`audio` or `None`); `save_upload(upload, subdir, limit_bytes,
+  media_dir)` copies the upload in 1 MiB chunks, names the file `<uuid4 hex><ext>`, and raises
+  `TooLarge` (with partial file removed) when the limit is exceeded; `delete_file(media_dir,
+  subdir, stored_name)` removes a stored file (missing file is not an error).
+- `backend/tests/test_media.py`: 15 tests — extension mapping (all tab/pdf/audio extensions,
+  uppercase `.GP5` → tab, `.exe` → None), upload within limit, exact limit OK, limit+1 raises
+  TooLarge with no file left, multi-chunk upload, subdirectory creation, delete existing file,
+  delete missing file (no error). Uses `tmp_path` with real files on disk.
