@@ -176,3 +176,18 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - Fix: `Item.takes` is added via late binding at module level (models.py:238); mypy doesn't see it
   on class instances. Added `# type: ignore[attr-defined]` on `joinedload(Item.takes)` calls in
   main.py:172,198. Mypy strict rejects unused `# type: ignore` comments.
+
+## T18 — Routine CRUD pages (SPEC 4.1, 4.3)
+- `backend/app/main.py`: six route handlers — `get_routines`, `get_new_routine`, `post_new_routine`,
+  `get_routine_edit`, `get_delete_routine`, `post_delete_routine`. Auth via `login: None = Depends(require_login)`
+  on GET routes; POST creates `Routine` with `db.add+flush+refresh` then 303 redirects to `/routines/{id}/edit`.
+- `backend/app/templates/routines_list.html`: table with name, items count, `total_minutes` (SQL SUM),
+  updated_at, action links. Empty state with create link.
+- `backend/app/templates/routines_new.html`, `routines_delete.html`, `routines_edit.html` (stub).
+- `backend/app/static/style.css`: `.routines-table`, `.btn-danger`, `.btn-inline`, `.routine-empty` styles.
+- `backend/tests/test_routines.py`: 26 tests — auth, list rendering, creation, deletion, session
+  preservation (SPEC 4.3: deleting routine keeps sessions with `routine_id` NULL).
+- Gotcha: SQLAlchemy `expire_on_commit=False` keeps deleted objects in identity map; tests call
+  `db.expunge(routine)` before `db.get()`. `TestClient.post()` follows redirects; 303 checks
+  use `follow_redirects=False`. `Request.form()` values can be `UploadFile | str`; `.strip()`
+  guarded with `isinstance(raw_name, str)`.

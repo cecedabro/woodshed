@@ -430,6 +430,55 @@ a:hover {
     color: var(--secondary);
 }
 
+.error {
+    display: block;
+    color: #e74c3c;
+    font-size: var(--font-sm);
+    margin-top: var(--space-xs);
+}
+
+input.error, select.error, textarea.error {
+    border: 1px solid #e74c3c;
+}
+
+.routine-list {
+    list-style: none;
+    margin-top: var(--space-lg);
+}
+
+.routine-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid #2e2a24;
+}
+
+.routine-item a {
+    font-size: var(--font-md);
+    flex: 1;
+}
+
+.routine-meta {
+    font-size: var(--font-sm);
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.inline-form button {
+    flex-shrink: 0;
+}
+
+.delete-note {
+    margin-top: var(--space-sm);
+    font-size: var(--font-sm);
+    color: var(--text-dim);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

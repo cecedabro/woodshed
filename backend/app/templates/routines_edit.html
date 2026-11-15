@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Woodshed — Edit {{ routine.name }}{% endblock %}
+
+{% block content %}
+<div class="item-detail">
+    <div class="item-header">
+        <h1>Edit {{ routine.name }}</h1>
+    </div>
+
+    <p>Add blocks to this routine to start practising.</p>
+
+    <a href="/routines" class="btn">Back to Routines</a>
+</div>
+{% endblock %}

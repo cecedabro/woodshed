@@ -42,7 +42,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_item_delete.py -q
 
 ## Round 2: routines, runner, metronome
-- [ ] T18: Routine service + pages (SPEC 4.1, 4.3): `/routines` list with total planned minutes, `/routines/new` (name only, then go to the editor), delete with confirm. Validation per 4.1. Write `tests/test_routines.py`.
+- [x] T18: Routine service + pages (SPEC 4.1, 4.3): `/routines` list with total planned minutes, `/routines/new` (name only, then go to the editor), delete with confirm. Validation per 4.1. Write `tests/test_routines.py`.
   accept: cd backend && uv run pytest tests/test_routines.py -q
 - [ ] T19: Routine editor (SPEC 4.2) at `/routines/{id}/edit` with HTMX: add a block (item select, minutes, optional BPM), remove, move up/down; each action returns the updated block list fragment; positions stay 0..n-1 without gaps. Write `tests/test_routine_editor.py` (move first block down twice → order; remove middle → positions renumbered; 31st block → 422).
   accept: cd backend && uv run pytest tests/test_routine_editor.py -q

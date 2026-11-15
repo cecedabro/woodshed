@@ -8,16 +8,16 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import Session, joinedload
 
 from app.api import router as api_router
 from app.auth import get_login, post_login, post_logout, require_login
 from app.config import Settings, check_production
-from app.db import make_engine, make_sessionmaker
+from app.db import get_db, make_engine, make_sessionmaker
 from app.item_forms import get_edit_item, get_new_item, post_edit_item, post_new_item
 from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
-from app.models import Attachment, Item, Take
+from app.models import Attachment, Item, Routine, Take
 from app.security import SecurityMiddleware
 from app.templating import env
 
@@ -262,6 +262,136 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_api_route(
         "/items/{item_id}/attachments/{attachment_id}/_delete",
         post_delete_attachment,
+        methods=["POST"],
+        response_model=None,
+    )
+
+    # ------------------------------------------------------------------
+    # Routine pages (SPEC 4.1, 4.3)
+    # ------------------------------------------------------------------
+
+    def get_routines(request: Request, login: None = Depends(require_login)) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                routines = db.execute(
+                    text(
+                        "SELECT r.id, r.name, "
+                        "COALESCE(SUM(rb.minutes), 0) AS total_minutes, "
+                        "COUNT(rb.id) AS block_count "
+                        "FROM routine r "
+                        "LEFT JOIN routine_block rb ON rb.routine_id = r.id "
+                        "GROUP BY r.id "
+                        "ORDER BY r.updated_at DESC"
+                    )
+                ).fetchall()
+            finally:
+                db.close()
+        routines_list = [
+            {
+                "id": row.id,
+                "name": row.name,
+                "total_minutes": row.total_minutes,
+                "block_count": row.block_count,
+            }
+            for row in routines
+        ]
+        template = env.get_template("routines_list.html")
+        return HTMLResponse(template.render({"active": "routines", "routines": routines_list}))
+
+    async def get_new_routine(
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse:
+        template = env.get_template("routines_new.html")
+        return HTMLResponse(
+            template.render({"active": "routines", "routine": None, "errors": None})
+        )
+
+    async def post_new_routine(
+        request: Request,
+        login: None = Depends(require_login),
+        db: Session = Depends(get_db),
+    ) -> RedirectResponse | HTMLResponse:
+        form = await request.form()
+        raw_name = form.get("name")
+        name = raw_name.strip() if isinstance(raw_name, str) else ""
+        if not name:
+            template = env.get_template("routines_new.html")
+            return HTMLResponse(
+                template.render(
+                    {"active": "routines", "routine": None, "errors": {"name": "Name is required."}}
+                ),
+                status_code=422,
+            )
+        routine = Routine(name=name)
+        db.add(routine)
+        db.commit()
+        return RedirectResponse(url=f"/routines/{routine.id}/edit", status_code=303)
+
+    def get_routine_edit(
+        routine_id: int,
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse | RedirectResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                routine = db.get(Routine, routine_id)
+            finally:
+                db.close()
+        if routine is None:
+            raise HTTPException(status_code=404, detail="Routine not found")
+        template = env.get_template("routines_edit.html")
+        return HTMLResponse(template.render({"active": "routines", "routine": routine}))
+
+    def get_delete_routine(
+        routine_id: int,
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse | RedirectResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                routine = db.get(Routine, routine_id)
+            finally:
+                db.close()
+        if routine is None:
+            raise HTTPException(status_code=404, detail="Routine not found")
+        template = env.get_template("routines_delete.html")
+        return HTMLResponse(template.render({"active": "routines", "routine": routine}))
+
+    def post_delete_routine(
+        routine_id: int,
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> RedirectResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                routine = db.get(Routine, routine_id)
+                if routine is None:
+                    raise HTTPException(status_code=404, detail="Routine not found")
+                db.delete(routine)
+                db.commit()
+            finally:
+                db.close()
+        return RedirectResponse(url="/routines", status_code=303)
+
+    app.add_api_route("/routines", get_routines, methods=["GET"], response_model=None)
+    app.add_api_route("/routines/new", get_new_routine, methods=["GET"], response_model=None)
+    app.add_api_route("/routines/new", post_new_routine, methods=["POST"], response_model=None)
+    app.add_api_route(
+        "/routines/{routine_id}/edit",
+        get_routine_edit,
+        methods=["GET"],
+        response_model=None,
+    )
+    app.add_api_route(
+        "/routines/{routine_id}/delete",
+        get_delete_routine,
+        methods=["GET"],
+        response_model=None,
+    )
+    app.add_api_route(
+        "/routines/{routine_id}/delete",
+        post_delete_routine,
         methods=["POST"],
         response_model=None,
     )
