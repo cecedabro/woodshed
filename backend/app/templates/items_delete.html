@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Woodshed — Delete {{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="item-detail">
+    <div class="item-header">
+        <h1>Delete {{ item.title }}</h1>
+    </div>
+
+    <div class="delete-warning">
+        <p>Are you sure you want to delete <strong>{{ item.title }}</strong>?</p>
+        <p>This will permanently remove:</p>
+        <ul>
+            {% if attachment_count %}
+            <li>{{ attachment_count }} attachment{{ "s" if attachment_count != 1 }} (tabs, PDFs, audio files)</li>
+            {% endif %}
+            {% if take_count %}
+            <li>{{ take_count }} recording{{ "s" if take_count != 1 }}</li>
+            {% endif %}
+        </ul>
+        <p class="delete-note">
+            Logged practice sessions for this item will be kept, but the item itself
+            will no longer be available.
+        </p>
+    </div>
+
+    <form method="post" action="/items/{{ item.id }}/delete">
+        <button type="submit" class="btn btn-danger">Delete this item</button>
+        <a href="/items/{{ item.id }}" class="btn">Cancel</a>
+    </form>
+</div>
+{% endblock %}

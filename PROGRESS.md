@@ -161,3 +161,18 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   uppercase `.GP5` → tab, `.exe` → None), upload within limit, exact limit OK, limit+1 raises
   TooLarge with no file left, multi-chunk upload, subdirectory creation, delete existing file,
   delete missing file (no error). Uses `tmp_path` with real files on disk.
+
+## T15 — Delete item (SPEC 3.7)
+- `backend/app/main.py`: added `get_delete_item` (GET `/items/{item_id}/delete` → confirmation page)
+  and `post_delete_item` (POST `/items/{item_id}/delete` → deletes disk files, cascades DB deletes,
+  303 redirect to `/library`). Imported `delete_file` from `app.media`.
+- `backend/app/templates/items_delete.html`: confirmation page showing item title, kind, artist,
+  attachment count with inline warning, take count with inline warning, delete/cancel buttons.
+  Cancel links to `/items/{item_id}`. Form POSTs to `/_delete` (no, to `/items/{item_id}/delete`).
+- `backend/tests/test_item_delete.py`: 17 tests — GET page 200, title display, attachment/take
+  counts, combined counts, 404 for missing item, cancel link, delete form, item removed from DB,
+  303 redirect to `/library`, unknown item → 404, attachment file deleted, take file deleted,
+  all files deleted, DB cascade on attachments/takes, session block keeps `item_title` after delete.
+- Fix: `Item.takes` is added via late binding at module level (models.py:238); mypy doesn't see it
+  on class instances. Added `# type: ignore[attr-defined]` on `joinedload(Item.takes)` calls in
+  main.py:172,198. Mypy strict rejects unused `# type: ignore` comments.

@@ -163,6 +163,54 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 db.close()
         return RedirectResponse(f"/items/{item_id}", status_code=303)
 
+    def get_delete_item(item_id: int, request: Request) -> HTMLResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                item = db.scalar(
+                    select(Item)
+                    .where(Item.id == item_id)
+                    .options(joinedload(Item.attachments), joinedload(Item.takes))  # type: ignore[attr-defined]
+                )
+            finally:
+                db.close()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Item not found")
+        attachment_count = len(item.attachments)
+        take_count = len(item.takes)
+        template = env.get_template("items_delete.html")
+        return HTMLResponse(
+            template.render(
+                {
+                    "item": item,
+                    "active": "library",
+                    "attachment_count": attachment_count,
+                    "take_count": take_count,
+                }
+            )
+        )
+
+    def post_delete_item(item_id: int, request: Request) -> RedirectResponse:
+        with app.state.sessionmaker() as db:
+            try:
+                item = db.scalar(
+                    select(Item)
+                    .where(Item.id == item_id)
+                    .options(joinedload(Item.attachments), joinedload(Item.takes))  # type: ignore[attr-defined]
+                )
+                if item is None:
+                    raise HTTPException(status_code=404, detail="Item not found")
+                # Delete attachment files from disk before deleting DB rows
+                for att in item.attachments:
+                    delete_file(app.state.settings.MEDIA_DIR, "attachments", att.stored_name)
+                # Delete take files from disk before deleting DB rows
+                for take in item.takes:
+                    delete_file(app.state.settings.MEDIA_DIR, "takes", take.stored_name)
+                db.delete(item)
+                db.commit()
+            finally:
+                db.close()
+        return RedirectResponse("/library", status_code=303)
+
     app.add_api_route("/login", get_login, methods=["GET"])
     app.add_api_route("/login", post_login, methods=["POST"])
     app.add_api_route("/logout", post_logout, methods=["POST"])
@@ -174,6 +222,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_api_route("/items/{item_id}/edit", get_edit_item, methods=["GET"], response_model=None)
     app.add_api_route(
         "/items/{item_id}/edit", post_edit_item, methods=["POST"], response_model=None
+    )
+    app.add_api_route(
+        "/items/{item_id}/delete", get_delete_item, methods=["GET"], response_model=None
+    )
+    app.add_api_route(
+        "/items/{item_id}/delete", post_delete_item, methods=["POST"], response_model=None
     )
 
     def get_attachment_download(attachment_id: int) -> Response:
