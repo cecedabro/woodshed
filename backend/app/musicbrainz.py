@@ -1,9 +1,15 @@
-"""MusicBrainz recording search – pure parsing and query building."""
+"""MusicBrainz recording search – parsing, query building, and HTTP fetching."""
 
 from __future__ import annotations
 
+import json
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote_plus
+from urllib.request import Request, urlopen
 
 
 @dataclass(frozen=True)
@@ -99,3 +105,155 @@ def parse_recordings(data: dict[str, Any]) -> list[Candidate]:
     result.sort(key=lambda c: (-c.score, c.date))
 
     return result[:8]
+
+
+# ---------------------------------------------------------------------------
+# Rate limiter – at most one request per second for the whole app
+# ---------------------------------------------------------------------------
+
+
+class RateLimiter:
+    """Ensures at most one MusicBrainz request per second.
+
+    * *clock* and *sleep* are injectable so tests can verify waits
+      without real time passing (SPEC 14.2).
+    """
+
+    _LAST: float | None = None
+
+    def __init__(
+        self,
+        clock: Callable[[], float] | None = None,
+        sleep: Callable[[float], None] | None = None,
+    ) -> None:
+        self._clock = clock or time.monotonic
+        self._sleep = sleep or time.sleep
+        self.sleeps: list[float] = []  # recorded sleeps for test assertions
+
+    # -- unit-of-work --------------------------------------------------------
+
+    def wait(self) -> None:
+        """Sleep if the last request was less than one second ago."""
+        now = self._clock()
+        if self._LAST is not None:
+            elapsed = now - self._LAST
+            if elapsed < 1.0:
+                delay = 1.0 - elapsed
+                self._sleep(delay)
+                self.sleeps.append(delay)
+        self._LAST = self._clock()
+
+    def reset(self) -> None:
+        """Clear internal state (convenient for tests)."""
+        self._LAST = None
+        self.sleeps.clear()
+
+
+# Default limiter used by ``search()`` when the caller doesn't supply one.
+_default_limiter: RateLimiter | None = None
+
+
+def _get_default_limiter() -> RateLimiter:
+    global _default_limiter
+    if _default_limiter is None:
+        _default_limiter = RateLimiter()
+    return _default_limiter
+
+
+# ---------------------------------------------------------------------------
+# HTTP fetching
+# ---------------------------------------------------------------------------
+
+
+def fetch_url(
+    url: str,
+    user_agent: str,
+    timeout: float = 5.0,
+    _real_fetch: Callable[[str, str, float], bytes] | None = None,
+) -> bytes:
+    """Fetch *url* via ``urllib.request`` with the given *user_agent*.
+
+    Raises ``MBUnavailable`` on any network or parse failure.
+    """
+    if _real_fetch is not None:
+        try:
+            return _real_fetch(url, user_agent, timeout)
+        except HTTPError as exc:
+            raise MBUnavailable(f"HTTP {exc.code}") from exc
+        except URLError as exc:
+            raise MBUnavailable(f"Network error: {exc}") from exc
+
+    req = Request(url, headers={"User-Agent": user_agent})
+    try:
+        with urlopen(req, timeout=timeout) as resp:  # nosec: B310 URL is a known MusicBrainz endpoint
+            return cast(bytes, resp.read())
+    except HTTPError as exc:
+        raise MBUnavailable(f"HTTP {exc.code}") from exc
+    except URLError as exc:
+        raise MBUnavailable(f"Network error: {exc}") from exc
+
+
+def _body_to_bytes(body: str | bytes) -> bytes:
+    if isinstance(body, str):
+        return body.encode()
+    return body
+
+
+# ---------------------------------------------------------------------------
+# Public search API
+# ---------------------------------------------------------------------------
+
+
+def search(
+    query: str,
+    *,
+    settings: Any | None = None,
+    limiter: RateLimiter | None = None,
+    _fetch: Callable[[str, str, float], bytes] | None = None,
+) -> list[Candidate]:
+    """Search MusicBrainz recordings.
+
+    * *query* – the **escaped** query string (already built by
+      ``build_query``).
+    * *settings* – if ``Settings`` is passed, ``MB_USER_AGENT`` and
+      ``MB_TIMEOUT`` (default 5) are taken from it; otherwise the
+      function uses the built-in defaults.
+    * *limiter* – rate limiter instance; defaults to the global limiter.
+    * *_fetch* – injectable fetch callback for tests (hidden).
+
+    Uses a 5-second timeout and one request per second.
+    Raises ``MBUnavailable`` when the API is unreachable or returns
+    invalid data (SPEC 14.2-14.3).
+    """
+    if limiter is None:
+        limiter = _get_default_limiter()
+
+    # Resolve user-agent
+    if settings is not None and hasattr(settings, "MB_USER_AGENT"):
+        user_agent = settings.MB_USER_AGENT
+    else:
+        user_agent = "woodshed/1.0 (https://guitar.home.cedricschippers.dev)"
+
+    # Resolve timeout
+    if settings is not None and hasattr(settings, "MB_TIMEOUT"):
+        timeout = float(getattr(settings, "MB_TIMEOUT", 5))
+    else:
+        timeout = 5.0
+
+    url = f"https://musicbrainz.org/ws/2/recording?fmt=json&limit=25&query={quote_plus(query)}"
+
+    limiter.wait()
+
+    raw = fetch_url(url, user_agent, timeout, _real_fetch=_fetch)
+    body = raw.decode()
+
+    # Detect rate-limit response from MusicBrainz
+    if "rate limit" in body.lower():
+        raise MBUnavailable("Rate limit exceeded by MusicBrainz")
+
+    try:
+        data = json.loads(body)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise MBUnavailable("Invalid JSON from MusicBrainz") from exc
+
+    return parse_recordings(data)

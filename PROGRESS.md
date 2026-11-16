@@ -171,3 +171,12 @@ don't read that file, search it with `rg` if you need something.
 - Created `backend/app/musicbrainz.py` with `Candidate` dataclass (frozen, immutable), `build_query()` (escapes backslashes and double-quotes, appends `AND artist:"…"` only when artist is not None), and `parse_recordings()` (extracts artist from artist-credit with joinphrase, first-release-date, length in m:ss, release-group-id; dedupes by (title, artist) case-insensitive keeping earliest date, sorts by score desc then date asc, limits to 8).
 - Created `backend/tests/test_musicbrainz_parse.py` (12 tests): Texas Flood fixture dedup (1 candidate, earliest year "1990", length "5:44"), Blackbird fixture (≤8 candidates, all titled "Blackbird", sorted by score then date), `build_query` quote escaping and artist clause presence, `build_query` no-artist case, backslash escaping, Candidate immutability.
 - All 509 tests pass, 98.34% coverage, `make check` clean.
+
+## MusicBrainz search: rate limiter, fetch, search(), /items/lookup (T75)
+- Added `MB_USER_AGENT` and `MB_TIMEOUT` (default 5) settings to `app/config.py`.
+- Added `RateLimiter` class to `app/musicbrainz.py` with injectable `clock`/`sleep` and a wait-before-request pattern (sleeps until 1 s since last request); default singleton via `_get_default_limiter()`.
+- Added `fetch_url()` function using `urllib.request.Request` with `User-Agent` header and configurable timeout; raises `MBUnavailable` on `HTTPError`/`URLError`; accepts optional `_real_fetch` for test injection (also wraps its errors in `MBUnavailable`).
+- Added `search()` function: calls `limiter.wait()`, builds URL with `fmt=json&limit=25&query=…`, calls `fetch_url()`, detects rate-limit response body, parses JSON via `parse_recordings()`. Raises `MBUnavailable` on invalid JSON or rate-limited body.
+- Added `GET /items/lookup` route in `app/routes/items.py` that calls `search()` and renders `partials/mb_results.html` (candidate rows with `data-*` attributes + error/nothing-found messages).
+- Created `backend/tests/test_musicbrainz_search.py` (13 tests): fake fetch for URL params/User-Agent/timeout, rate-limit body detection, `MBUnavailable` from `URLError` and invalid JSON, RateLimiter sleep/no-sleep/reset/defaults, end-to-end with real fixture and empty fixture.
+- All 524 tests pass, 96.73% coverage, `make check` clean.

@@ -1,0 +1,13 @@
+{% for c in candidates %}
+<div class="mb-result" data-mbid="{{ c.mbid }}" data-rgid="{{ c.release_group_id or '' }}"
+     data-title="{{ c.title }}" data-artist="{{ c.artist }}" data-year="{{ c.year or '' }}"
+     data-length="{{ c.length }}">
+  <a class="mb-result-link" href="javascript:void(0)">
+    {{ c.title }}{% if c.artist %} – {{ c.artist }}{% endif %}
+    {% if c.year %}({{ c.year }}){% endif %}
+    {% if c.length %}<span class="meta">{{ c.length }}</span>{% endif %}
+  </a>
+</div>
+{% else %}
+<p class="meta">Nothing found.</p>
+{% endfor %}
