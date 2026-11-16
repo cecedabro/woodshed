@@ -220,3 +220,60 @@ def test_free_practice_uses_item_bpm(client: TestClient, db: Session) -> None:
     assert blocks == [
         {"item_id": item.id, "title": "Spider", "planned_seconds": 600, "start_bpm": 90}
     ]
+
+
+# ---------------------------------------------------------------------------
+# Countdown text, next block, and the current block's links (SPEC 5.2)
+# ---------------------------------------------------------------------------
+
+
+def _attach(db: Session, item_id: int, kind: str, filename: str) -> int:
+    from app.models import Attachment
+
+    att = Attachment(
+        item_id=item_id,
+        kind=kind,
+        filename=filename,
+        stored_name=f"{kind}-{filename}",
+        content_type="application/octet-stream",
+        size_bytes=1,
+    )
+    db.add(att)
+    db.commit()
+    return att.id
+
+
+def _block_items(db: Session, routine_id: int) -> list[int]:
+    from app.models import RoutineBlock
+
+    rows = db.query(RoutineBlock).filter_by(routine_id=routine_id).order_by(RoutineBlock.position)
+    return [b.item_id for b in rows]
+
+
+def test_countdown_and_next_text(client: TestClient, db: Session) -> None:
+    rid = _routine(db, ("Scales", None, None, 5), ("Song", None, None, 10))
+    page = client.get(f"/run/{rid}").text
+    assert 'id="run-time">5:00<' in page
+    assert "Next: Song" in page
+    single = _routine(db, ("Only", None, None, 10))
+    assert "Last block" in client.get(f"/run/{single}").text
+
+
+def test_links_first_of_each_kind_per_block(client: TestClient, db: Session) -> None:
+    rid = _routine(db, ("Scales", None, None, 5), ("Song", None, None, 10))
+    first, second = _block_items(db, rid)
+    tab = _attach(db, first, "tab", "riff.gp")
+    _attach(db, first, "tab", "second.gp")
+    pdf = _attach(db, second, "pdf", "sheet.pdf")
+    audio = _attach(db, second, "audio", "backing.mp3")
+
+    page = client.get(f"/run/{rid}").text
+    rows = re.findall(r'<a class="row"[^>]*data-block="(\d)"[^>]*>', page)
+    assert rows == ["0", "1", "1"], "one tab for block 0; PDF and backing track for block 1"
+    assert f'href="/items/{first}/tab/{tab}"' in page
+    assert f'href="/media/attachment/{pdf}"' in page
+    assert f'href="/media/attachment/{audio}"' in page
+    assert "second.gp" not in page
+    tags = re.findall(r'<a class="row"[^>]*>', page)
+    assert "hidden" not in tags[0]
+    assert all("hidden" in t for t in tags[1:]), "later blocks' links start hidden"

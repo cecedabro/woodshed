@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { createRunner } from '../../app/static/js/runner.js';
 
 describe('createRunner', () => {
   function makeDeps(options = {}) {
@@ -145,5 +146,68 @@ describe('createRunner', () => {
     run.tick();
     await new Promise((r) => setTimeout(r, 0));
     assert.strictEqual(getLoggedBlocks()[0].bpm, 72);
+  });
+});
+
+describe('finish and the logged BPM', () => {
+  function setup(extra = {}) {
+    let nowVal = 1_000_000;
+    const logged = [];
+    let finished = 0;
+    const deps = {
+      api: {
+        startSession: () => Promise.resolve('s'),
+        logBlock: (sid, data) => logged.push(data),
+        finish: () => { finished++; },
+      },
+      now: () => nowVal,
+      cue: () => {},
+      ...extra,
+    };
+    const runner = createRunner(
+      [{ item_id: 1, title: 'A', planned_seconds: 60, start_bpm: 90 },
+       { item_id: 2, title: 'B', planned_seconds: 60, start_bpm: 100 }], deps);
+    return { runner, logged, advance: (ms) => { nowVal += ms; }, finished: () => finished };
+  }
+
+  it('finish logs the block in progress, then finishes once', async () => {
+    const { runner, logged, advance, finished } = setup();
+    runner.start();
+    await new Promise((r) => setTimeout(r, 0));
+    advance(30_000);
+    runner.finish();
+    runner.finish();
+    assert.strictEqual(logged.length, 1);
+    assert.strictEqual(logged[0].played_seconds, 30);
+    assert.strictEqual(logged[0].bpm, 90);
+    assert.strictEqual(finished(), 1);
+    assert.strictEqual(runner.current().done, true);
+  });
+
+  it('bpmToLog can make the logged BPM null (metronome off)', async () => {
+    const { runner, logged, advance } = setup({ bpmToLog: () => null });
+    runner.start();
+    await new Promise((r) => setTimeout(r, 0));
+    advance(60_000);
+    runner.tick();
+    assert.strictEqual(logged[0].bpm, null);
+  });
+});
+
+describe('skip on the last block', () => {
+  it('finishes the session', async () => {
+    let nowVal = 0;
+    let finished = 0;
+    const runner = createRunner([{ item_id: 1, title: 'A', planned_seconds: 60 }], {
+      api: { startSession: () => Promise.resolve('s'), logBlock: () => {}, finish: () => { finished++; } },
+      now: () => nowVal,
+      cue: () => {},
+    });
+    runner.start();
+    await new Promise((r) => setTimeout(r, 0));
+    nowVal = 20_000;
+    runner.skip();
+    assert.strictEqual(finished, 1);
+    assert.strictEqual(runner.current().done, true);
   });
 });
