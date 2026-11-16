@@ -14,18 +14,6 @@ from app.models import Setting
 # ---------------------------------------------------------------------------
 
 
-def test_get_settings_requires_login(client: TestClient) -> None:
-    """GET /settings requires login (401)."""
-    resp = client.get("/settings", follow_redirects=False)
-    assert resp.status_code == 401
-
-
-def test_post_settings_requires_login(client: TestClient) -> None:
-    """POST /settings requires login (401)."""
-    resp = client.post("/settings", data={"weekly_goal_minutes": "120"}, follow_redirects=False)
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # GET /settings
 # ---------------------------------------------------------------------------

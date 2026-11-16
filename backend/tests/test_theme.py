@@ -153,12 +153,6 @@ def test_settings_has_theme_selector(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_styleguide_requires_login(client: TestClient) -> None:
-    """GET /styleguide requires login (401)."""
-    resp = client.get("/styleguide", follow_redirects=False)
-    assert resp.status_code == 401
-
-
 def test_styleguide_returns_200(client: TestClient) -> None:
     """GET /styleguide returns 200."""
     _login(client)

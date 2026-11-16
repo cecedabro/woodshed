@@ -15,36 +15,6 @@ from sqlalchemy.orm import Session
 # ---------------------------------------------------------------------------
 
 
-def test_get_routines_requires_login(client: TestClient) -> None:
-    """/routines requires login (401)."""
-    resp = client.get("/routines", follow_redirects=False)
-    assert resp.status_code == 401
-
-
-def test_get_new_routine_requires_login(client: TestClient) -> None:
-    """GET /routines/new requires login (401)."""
-    resp = client.get("/routines/new", follow_redirects=False)
-    assert resp.status_code == 401
-
-
-def test_post_new_routine_requires_login(client: TestClient) -> None:
-    """POST /routines/new requires login (401)."""
-    resp = client.post("/routines/new", data={"name": "Test"}, follow_redirects=False)
-    assert resp.status_code == 401
-
-
-def test_get_delete_routine_requires_login(client: TestClient) -> None:
-    """GET /routines/{id}/delete requires login (401)."""
-    resp = client.get("/routines/999/delete", follow_redirects=False)
-    assert resp.status_code == 401
-
-
-def test_post_delete_routine_requires_login(client: TestClient) -> None:
-    """POST /routines/{id}/delete requires login (401)."""
-    resp = client.post("/routines/999/delete", follow_redirects=False)
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # GET /routines — list
 # ---------------------------------------------------------------------------

@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import require_login
 from app.clock import now as clock_now
 from app.db import get_db
 from app.models import Item, PracticeSession, SessionBlock
@@ -77,7 +76,6 @@ def _close_stale_sessions(db: Session, now: datetime) -> None:
 def create_session(
     payload: SessionCreate,
     db: Session = Depends(get_db),
-    _login: None = Depends(require_login),
 ) -> dict[str, Any]:
     """Create a new practice session (SPEC 5.4)."""
     now = clock_now()
@@ -99,7 +97,6 @@ def log_block(
     session_id: int,
     payload: BlockLog,
     db: Session = Depends(get_db),
-    _login: None = Depends(require_login),
 ) -> dict[str, Any]:
     """Log a session block with clamping (SPEC 5.4–5.5)."""
     session = db.execute(
@@ -165,7 +162,6 @@ def log_block(
 def finish_session(
     session_id: int,
     db: Session = Depends(get_db),
-    _login: None = Depends(require_login),
 ) -> dict[str, Any]:
     """Finish a session and return summary (SPEC 5.4, backend.md §sessions)."""
     session = db.execute(

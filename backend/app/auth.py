@@ -1,7 +1,7 @@
 """Login flow and cookie helpers (SPEC 2.1–2.5).
 
 Cookie helpers ``sign`` / ``verify`` are pure functions exported for tests.
-Routes: GET /login, POST /login, POST /logout
+Routes: GET /login, POST /login, POST /logout. ``LoginRequiredMiddleware`` guards the rest.
 """
 
 import hashlib
@@ -12,7 +12,8 @@ from typing import Any
 
 from fastapi import Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from starlette.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import JSONResponse, Response
 
 from app.config import Settings
 from app.templating import env
@@ -60,17 +61,35 @@ def _get_settings(request: Request) -> Settings:
 
 
 # ---------------------------------------------------------------------------
-# Login check dependency
+# Login middleware (SPEC 2.3): deny by default
 # ---------------------------------------------------------------------------
 
+#: Paths open without login. Exact matches, plus everything under OPEN_PREFIXES.
+OPEN_PATHS = frozenset({"/login", "/healthz", "/readyz", "/manifest.webmanifest", "/sw.js"})
+OPEN_PREFIXES = ("/static/",)
 
-def require_login(request: Request) -> None:
-    """Raise HTTPException(401) if the user has no valid session cookie."""
-    settings = _get_settings(request)
-    if _parse_cookie(request, settings.SESSION_SECRET) is None:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=401, detail="Login required")
+def is_open_path(path: str) -> bool:
+    return path in OPEN_PATHS or path.startswith(OPEN_PREFIXES)
+
+
+def is_logged_in(request: Request) -> bool:
+    return _parse_cookie(request, _get_settings(request).SESSION_SECRET) is not None
+
+
+class LoginRequiredMiddleware(BaseHTTPMiddleware):
+    """Every route needs a valid session unless its path is in OPEN_PATHS / OPEN_PREFIXES.
+
+    HTML routes redirect 303 to /login; /api/ routes answer 401 JSON.
+    """
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        path = request.url.path
+        if is_open_path(path) or is_logged_in(request):
+            return await call_next(request)
+        if path.startswith("/api/"):
+            return JSONResponse({"detail": "Login required"}, status_code=401)
+        return RedirectResponse(url="/login", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -140,10 +159,12 @@ def _record_failure(state: Any, now: datetime) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _open_template(template_name: str, extra: dict[str, Any] | None = None) -> HTMLResponse:
+def _open_template(
+    template_name: str, extra: dict[str, Any] | None = None, status_code: int = 200
+) -> HTMLResponse:
     data = {"active": None, "error": None, "theme": "amp", **(extra or {})}
     template = env.get_template(template_name)
-    return HTMLResponse(template.render(data))
+    return HTMLResponse(template.render(data), status_code=status_code)
 
 
 def get_login(request: Request, settings: Settings = Depends(_get_settings)) -> HTMLResponse:
@@ -186,7 +207,7 @@ def post_login(
     else:
         # Record failure
         _record_failure(request.app.state, now)
-        return _open_template("login.html", {"error": "Wrong password"})
+        return _open_template("login.html", {"error": "Wrong password"}, status_code=401)
 
 
 def post_logout(request: Request, settings: Settings = Depends(_get_settings)) -> Response:

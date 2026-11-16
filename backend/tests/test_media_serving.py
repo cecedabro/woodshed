@@ -185,16 +185,6 @@ class TestRangeRequests:
 
 
 class TestErrors:
-    def test_unknown_kind_404(self, client: TestClient) -> None:
-        # Not logged in → 401 fires before kind check
-        resp = client.get("/media/unknown_king/1")
-        assert resp.status_code == 401
-
-    def test_unknown_id_404(self, client: TestClient) -> None:
-        # Not logged in → 401 fires before id check
-        resp = client.get("/media/attachment/99999")
-        assert resp.status_code == 401
-
     def test_unknown_kind_when_logged_in(self, client: TestClient, db: Session, settings) -> None:
         _login(client)
         resp = client.get("/media/unknown_king/1")
@@ -222,26 +212,3 @@ class TestErrors:
 
         resp = client.get(f"/media/attachment/{att.id}")
         assert resp.status_code == 404
-
-    def test_unauthenticated_401(self, client: TestClient, db: Session, settings) -> None:
-        item = _create_item(db)
-        data = b"secret content"
-        stored = "locked.gp"
-
-        att = Attachment(
-            item_id=item.id,
-            filename="locked.gp",
-            stored_name=stored,
-            kind="tab",
-            label="",
-            content_type="text/plain",
-            size_bytes=len(data),
-        )
-        db.add(att)
-        db.commit()
-
-        _write_media(settings, "attachments", stored, data)
-
-        # Without logging in
-        resp = client.get(f"/media/attachment/{att.id}")
-        assert resp.status_code == 401

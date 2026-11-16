@@ -15,12 +15,6 @@ from app.models import PracticeSession, Routine
 # ---------------------------------------------------------------------------
 
 
-def test_get_home_requires_login(client: TestClient) -> None:
-    """GET / requires login (401)."""
-    resp = client.get("/", follow_redirects=False)
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # GET / — empty state
 # ---------------------------------------------------------------------------

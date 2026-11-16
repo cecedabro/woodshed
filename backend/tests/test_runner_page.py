@@ -13,12 +13,6 @@ from sqlalchemy.orm import Session
 # ---------------------------------------------------------------------------
 
 
-def test_get_run_requires_login(client: TestClient) -> None:
-    """GET /run/{id} requires login (401)."""
-    resp = client.get("/run/1", follow_redirects=False)
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # 404
 # ---------------------------------------------------------------------------

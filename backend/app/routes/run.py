@@ -3,12 +3,11 @@
 Routes: GET /run/item/{item_id}, GET /run/{routine_id}
 """
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from app.auth import require_login
 from app.models import Item, Routine, RoutineBlock
 from app.templating import env, get_theme
 
@@ -19,7 +18,6 @@ router = APIRouter()
 def get_run_item(
     item_id: int,
     request: Request,
-    login: None = Depends(require_login),
     minutes: int = Query(default=10),
 ) -> HTMLResponse:
     from types import SimpleNamespace
@@ -57,7 +55,6 @@ def get_run_item(
 def get_run_routine(
     routine_id: int,
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse:
     with request.app.state.sessionmaker() as db:
         try:

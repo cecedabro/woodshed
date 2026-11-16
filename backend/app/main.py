@@ -3,14 +3,14 @@
 import logging
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import router as api_router
-from app.auth import get_login, post_login, post_logout, require_login
+from app.auth import LoginRequiredMiddleware, get_login, post_login, post_logout
 from app.clock import LOCAL_TZ
 from app.config import Settings, check_production
 from app.db import make_engine, make_sessionmaker
@@ -41,6 +41,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     STATIC_DIR = Path(__file__).resolve().parents[0] / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+    # Added last = outermost: security headers also land on login redirects.
+    app.add_middleware(LoginRequiredMiddleware)
     app.add_middleware(SecurityMiddleware)
 
     @app.exception_handler(404)
@@ -57,7 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.get("/")
-    def home(login: None = Depends(require_login)) -> HTMLResponse:
+    def home() -> HTMLResponse:
         from datetime import datetime
 
         with app.state.sessionmaker() as db:
@@ -129,7 +131,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/styleguide", response_model=None)
     def styleguide(
         request: Request,
-        login: None = Depends(require_login),
     ) -> HTMLResponse:
         return HTMLResponse(
             env.get_template("styleguide.html").render(

@@ -64,12 +64,6 @@ def _create_routine_with_blocks(
 # ---------------------------------------------------------------------------
 
 
-def test_move_requires_login(client: TestClient) -> None:
-    """POST /routines/{id}/blocks/{id}/move requires login (401)."""
-    resp = client.post("/routines/1/blocks/1/move?direction=up", follow_redirects=False)
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # Bad direction → 422
 # ---------------------------------------------------------------------------

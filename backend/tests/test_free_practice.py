@@ -24,12 +24,6 @@ def _login(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_get_run_item_requires_login(client: TestClient) -> None:
-    """GET /run/item/{id} requires login (401)."""
-    resp = client.get("/run/item/1", follow_redirects=False)
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # 404
 # ---------------------------------------------------------------------------

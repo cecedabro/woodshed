@@ -10,7 +10,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.auth import require_login
 from app.db import get_db
 from app.models import Routine
 from app.templating import env, get_theme
@@ -21,7 +20,6 @@ router = APIRouter()
 @router.get("/routines", response_model=None)
 def get_routines(
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse:
     with request.app.state.sessionmaker() as db:
         try:
@@ -59,7 +57,6 @@ def get_routines(
 @router.get("/routines/new", response_model=None)
 async def get_new_routine(
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse:
     return HTMLResponse(
         env.get_template("routines_new.html").render(
@@ -74,7 +71,6 @@ async def get_new_routine(
 @router.post("/routines/new", response_model=None)
 async def post_new_routine(
     request: Request,
-    login: None = Depends(require_login),
     db: Session = Depends(get_db),
 ) -> RedirectResponse | HTMLResponse:
     form = await request.form()
@@ -100,7 +96,6 @@ async def post_new_routine(
 def get_routine_edit(
     routine_id: int,
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse | RedirectResponse:
     with request.app.state.sessionmaker() as db:
         try:
@@ -124,7 +119,6 @@ def get_routine_edit(
 def get_delete_routine(
     routine_id: int,
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse | RedirectResponse:
     with request.app.state.sessionmaker() as db:
         try:
@@ -148,7 +142,6 @@ def get_delete_routine(
 def post_delete_routine(
     routine_id: int,
     request: Request,
-    login: None = Depends(require_login),
 ) -> RedirectResponse:
     with request.app.state.sessionmaker() as db:
         try:
@@ -191,8 +184,8 @@ def _render_block_list(routine: Routine, db: Session) -> str:
 def post_move_block(
     routine_id: int,
     block_id: int,
+    request: Request,
     direction: str = Query(..., pattern="^(up|down)$"),
-    request: Request = Depends(require_login),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Move a block up or down within a routine (SPEC 4.2).
