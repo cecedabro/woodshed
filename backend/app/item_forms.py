@@ -62,6 +62,9 @@ def _item_to_form_data(db_item) -> ItemIn:  # type: ignore[no-untyped-def]
         artist=db_item.artist,
         status=db_item.status,
         current_bpm=db_item.current_bpm,
+        year=db_item.year,
+        mbid=db_item.mbid,
+        release_group_id=db_item.release_group_id,
         original_url=db_item.original_url,
         notes=db_item.notes or None,
     )
@@ -87,7 +90,7 @@ async def _extract_and_validate(
     form = await request.form()
     raw: dict[str, str | int] = {}
     for key, value in form.items():
-        if key == "current_bpm" and value:
+        if key == "current_bpm" and value or key == "year" and value:
             try:
                 raw[key] = int(str(value))
             except (ValueError, TypeError):
@@ -158,8 +161,8 @@ async def get_edit_item(
             item=_item_to_form_data(item),
             errors=None,
             edit_id=item_id,
-            mbid="",
-            rgid="",
+            mbid=item.mbid or "",
+            rgid=item.release_group_id or "",
             back_url=f"/items/{item_id}",
             theme=get_theme(request.app),
         )

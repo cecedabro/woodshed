@@ -153,6 +153,16 @@ don't read that file, search it with `rg` if you need something.
 - All 459 tests pass, 98% coverage, `make check` clean.
 
 ## Tuner reference in Settings, 2026-11-16 (T72)
-- Updated `backend/app/routes/settings.py`: added `tuner_a4` parsing and saving in POST handler. If the value is a valid integer in 430–450, it is persisted; otherwise it is silently skipped (existing value preserved, no error shown for tuner_a4 specifically). Non-numeric and empty values are also skipped.
+- Updated `backend/app/routes/settings.py`: added `tuner_a4` parsing and saving in POST handler. If the value is a valid integer in 430–450, it is persisted; otherwise it is silently skipped (existing value preserved, no error shown for tuner_a4 specifically). Non-numeric and out-of-range values are also skipped.
 - Updated `backend/tests/test_settings.py`: added 11 tests covering default 440 display, saved value display, POST saving of valid values (430, 432, 440, 450), rejection of out-of-range (429, 451), rejection of non-numeric ("abc"), empty field not overwriting existing, and tuner page using saved value.
 - All 470 tests pass, 98.31% coverage, `make check` clean.
+
+## Item year, mbid, release_group_id, has_cover fields (T84)
+- Added `year`, `mbid`, `release_group_id`, `has_cover` to `Item` model (`backend/app/models.py`).
+- Added `ItemIn` with `year` (1000–2100) and `mbid`/`release_group_id` (UUID) validators in `backend/app/items_service.py`; updated `create_item` and `update_item` to pass them through.
+- Generated migration `backend/alembic/versions/2cc9eaa2517d_item_mb_fields.py` with `ALTER TABLE item ADD COLUMN` for all four fields (nullable year, mbid, release_group_id; has_cover defaults to false).
+- Updated `backend/app/api.py` item response dicts to include new fields.
+- Updated `backend/app/item_forms.py`: `_extract_and_validate` parses `year` as int; `_item_to_form_data` maps new fields; `_render_form` passes `mbid`/`rgid` context; `get_edit_item` passes actual `item.mbid`/`item.release_group_id` to hidden form fields.
+- Added `year` visible `<input type="number">` in `partials/item_fields.html` (Practice section); `mbid`/`release_group_id` are hidden.
+- Created `backend/tests/test_item_mb_fields.py` (27 tests): form rendering, API creation with all fields, year boundary/validation, mbid/release_group_id UUID validation, edit form population, API response fields.
+- All 497 tests pass, 98.35% coverage, `make check` clean.

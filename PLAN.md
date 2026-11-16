@@ -158,7 +158,7 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && uv run pytest tests/test_settings.py tests/test_tuner_page.py -q
 
 ## Round 8: songs from MusicBrainz (SPEC 14, docs/backend.md §musicbrainz)
-- [ ] T73: Item fields `year`, `mbid`, `release_group_id`, `has_cover` (SPEC 3.1, docs/backend.md §model): model, one migration, `ItemIn` validation (year 1000–2100; ids must be UUIDs), shown on the item form (recipe: year visible, ids hidden). Write `tests/test_item_mb_fields.py` (create with all four via the form and the API; bad year → 422; `mbid` "abc" → 422).
+- [x] T73: Item fields `year`, `mbid`, `release_group_id`, `has_cover` (SPEC 3.1, docs/backend.md §model): model, one migration, `ItemIn` validation (year 1000–2100; ids must be UUIDs), shown on the item form (recipe: year visible, ids hidden). Write `tests/test_item_mb_fields.py` (create with all four via the form and the API; bad year → 422; `mbid` "abc" → 422).
   accept: cd backend && uv run pytest tests/test_item_mb_fields.py -q
 - [ ] T74: `app/musicbrainz.py` pure part: `Candidate`, `build_query`, `parse_recordings`. Write `tests/test_musicbrainz_parse.py` using the fixtures: Texas Flood + Stevie Ray Vaughan gives one candidate after dedupe with the earliest year and a `m:ss` length; the Blackbird fixture gives at most 8 candidates, all with title Blackbird, sorted by score then date; `build_query('Say "Hi"', None)` escapes the quotes; with an artist the query contains ` AND artist:"…"`.
   accept: cd backend && uv run pytest tests/test_musicbrainz_parse.py -q
