@@ -112,6 +112,15 @@ don't read that file, search it with `rg` if you need something.
 - Removed `run.html` from `backend/tests/ui_legacy.txt`.
 - All 434 tests pass, 99% coverage, `make check` clean.
 
+## Progress page migration, 2026-11-16 (T67)
+- Updated `backend/app/routes/progress.py`: added `this_week`, `avg_12wk`, `best_week` context variables computed from `weeks_12` data.
+- Rewrote `backend/app/templates/progress.html` to extend `base.html` and use new UI macros: removed `<h1>`, replaced old table/chart layout with `ui.section()`/`ui.group()`/`ui.stat()`/`ui.row()` per the design recipe. Section headers: "Last 12 weeks" and "Tempo, last 90 days".
+- Updated `backend/app/templates/macros.html`: `render_bar_chart` macro now emits `.chart`, `.chart-bar`, `.chart-goal`, `.chart-label` CSS classes; removed inline `fill`/`stroke` attributes.
+- Removed `progress.html` from `backend/tests/ui_legacy.txt`.
+- Updated `backend/tests/test_progress_tempo.py`: changed section title assertion, replaced obsolete `.delta` class checks with value assertions (`"+20 bpm"`, `"-30 bpm"`).
+- Fixed mypy error in `progress.py` by extracting minutes list with `type: ignore[misc]` (dict return type from `weeks_12` mixes `int | date`).
+- All 437 tests pass, 99% coverage, `make check` clean.
+
 ## By hand 2026-11-16: T83 + T79 (runner page JS)
 - `run-page.js` rewritten for the new `run.html` ids; what to show comes from the pure `runner-view.js` (tested in `tests/js/runner-view.test.js`). timer.js values are seconds, not ms.
 - `runner.js`: `finish()` logs the block in progress; skipping the last block finishes the session; `deps.bpmToLog` makes the logged BPM null with the metronome off (SPEC 6.3).

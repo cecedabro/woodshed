@@ -52,40 +52,35 @@
 {% endif %}
 {% if mm == 0 %}{% set mm = 1 %}{% endif %}
 <svg xmlns="http://www.w3.org/2000/svg"
-     viewBox="0 0 {{ cw }} {{ ch }}"
-     width="100%" height="100%"
-     class="progress-svg"
-     role="img"
-     aria-label="Practice minutes per week for the last 12 weeks">
-    <rect x="0" y="0" width="{{ cw }}" height="{{ ch }}"
-          fill="var(--bg-alt)" rx="8"/>
-    {% set gy = pt + uh - (goal / mm * uh) %}
-    <line x1="{{ pl }}" y1="{{ gy }}"
-          x2="{{ cw - pr }}" y2="{{ gy }}"
-          stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
-    <text x="{{ cw - pr }}" y="{{ gy - 6 }}"
-          fill="var(--accent)" font-size="11" text-anchor="end">
-        {{ goal }} min goal
-    </text>
-    {% for i, week in enumerate(weeks) %}
-        {% set bx = pl + i * (bw + bg) %}
-        {% set bh = week.minutes / mm * uh %}
-        {% set by = pt + uh - bh %}
-        <rect x="{{ bx }}" y="{{ by }}"
-              width="{{ bw }}" height="{{ bh }}"
-              fill="var(--secondary)" rx="2"
-              opacity="{{ 0.5 + 0.5 * (week.minutes / mm) }}">
-        </rect>
-        {% if week.minutes %}
-        <text x="{{ bx + bw / 2 }}" y="{{ by - 4 }}"
-              fill="var(--text-dim)" font-size="10" text-anchor="middle">
-            {{ week.minutes }}
-        </text>
-        {% endif %}
-        <text x="{{ bx + bw / 2 }}" y="{{ ch - 10 }}"
-              fill="var(--text-dim)" font-size="10" text-anchor="middle">
-            {{ week.monday.strftime('%b %-d') if week.monday }}
-        </text>
-    {% endfor %}
+      viewBox="0 0 {{ cw }} {{ ch }}"
+      width="100%" height="100%"
+      class="progress-svg chart"
+      role="img"
+      aria-label="Practice minutes per week for the last 12 weeks">
+     <rect x="0" y="0" width="{{ cw }}" height="{{ ch }}"
+           fill="var(--bg-alt)" rx="8"/>
+     {% set gy = pt + uh - (goal / mm * uh) %}
+     <line class="chart-goal" x1="{{ pl }}" y1="{{ gy }}"
+           x2="{{ cw - pr }}" y2="{{ gy }}"/>
+     <text class="chart-label" x="{{ cw - pr }}" y="{{ gy - 6 }}"
+           text-anchor="end">{{ goal }} min goal</text>
+     {% for i, week in enumerate(weeks) %}
+         {% set bx = pl + i * (bw + bg) %}
+         {% set bh = week.minutes / mm * uh %}
+         {% set by = pt + uh - bh %}
+         <rect class="chart-bar" x="{{ bx }}" y="{{ by }}"
+               width="{{ bw }}" height="{{ bh }}"
+               fill="var(--secondary)" rx="2"
+               opacity="{{ 0.5 + 0.5 * (week.minutes / mm) }}">
+         </rect>
+         {% if week.minutes %}
+         <text class="chart-label" x="{{ bx + bw / 2 }}" y="{{ by - 4 }}"
+               text-anchor="middle">{{ week.minutes }}</text>
+         {% endif %}
+         <text class="chart-label" x="{{ bx + bw / 2 }}" y="{{ ch - 10 }}"
+               text-anchor="middle">
+             {{ week.monday.strftime('%b %-d') if week.monday }}
+         </text>
+     {% endfor %}
 </svg>
 {%- endmacro %}
