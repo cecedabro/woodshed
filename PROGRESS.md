@@ -127,3 +127,14 @@ don't read that file, search it with `rg` if you need something.
 - Removed `settings.html` from `backend/tests/ui_legacy.txt`.
 - No test assertion updates needed (existing assertions matched new markup).
 - All 440 tests pass, 98% coverage, `make check` clean.
+
+## Login and 404 page migration, 2026-11-16 (T85)
+- Rewrote `backend/app/templates/login.html` to extend `base.html` (no more `legacy_base.html`),
+  using `{% import "_ui.html" as ui %}`, `ui.field("password", "Password", type="password", required=True, error=error)`,
+  and `ui.button("Log in", kind="primary", type="submit", size="big", block=True)`.
+- Rewrote `backend/app/templates/404.html` to extend `base.html`: title "Not found", `<span class="page-title">404</span>`,
+  two `<p>` elements for the messages, and a plain `<a href="/">Go home</a>`.
+- Updated `backend/app/auth.py`: passed `{"bare": True}` in all three login template render calls
+  (GET, rate-limited 429, wrong password 401).
+- Removed both `login.html` and `404.html` from `backend/tests/ui_legacy.txt`.
+- All 446 tests pass, 98.43% coverage, `make check` clean.
