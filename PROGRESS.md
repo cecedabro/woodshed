@@ -189,3 +189,11 @@ don't read that file, search it with `rg` if you need something.
 - Updated `items.py` lookup route: parses `title`/`artist` from query params, calls `build_query()` (skips search when both empty), renders `mb_results.html` with `{% call ui.group() %}…{% endcall %}` (not `{{ }}`) so UI macros work inside the partial swap.
 - Created `backend/tests/test_mb_lookup_page.py` (14 tests): 200 status, query building with title+artist/title only/artist only, empty params handling, pre-fill links containing title/artist/year/mbid/rgid (no length), pre-fill link has no `original_url`, error message on `MBUnavailable`, no error when no query, and data attributes on result rows.
 - All 538 tests pass, `make check` clean.
+
+## Cover art: fetch, save, serve, form integration (T77)
+- Created `backend/app/covers.py` with `fetch_cover` (iTunes Search API via `mbReleaseId`, injectable `fetch` for test doubles, magic-byte validation for JPEG/PNG, 2 MB size limit, HTML rejection) and `save_cover` (writes to `media_dir/cover/{item_id}.{ext}`, returns `False` on `OSError`).
+- Updated `backend/app/api.py`: imports `fetch_cover`/`save_cover`, adds `Settings` dependency to `create_item_route`, calls `_try_fetch_cover` after committing new item (cover fetch failures never roll back the item).
+- Updated `backend/app/item_forms.py`: imports `Settings`/`Item`/`fetch_cover`/`save_cover`, added `_try_fetch_cover(item, data, settings)` helper (wraps fetch+save in try/except), called it in `post_new_item` and `post_edit_item` POST handlers.
+- Updated `backend/app/routes/media.py`: added `GET /media/cover/{item_id}` route that looks up `Item.has_cover`, finds the cover file by `item_id.ext` in MEDIA_DIR/cover/, serves with correct `Content-Type` (`image/jpeg` or `image/png`), returns 404 when no cover or file missing.
+- Created `backend/tests/test_covers.py` (20 tests): magic byte detection (JPEG/PNG/HTML/empty), fetch with fake injectors (JPEG, PNG, HTML rejection, oversized, network error), save cover (JPEG, PNG, OSError return False), API item creation with/without release_group_id, form item creation/edit with release_group_id, cover serving (JPEG 200 + correct content-type, PNG 200, 404 when no cover, 404 for nonexistent item).
+- All 558 tests pass, 97% coverage, `make check` clean.

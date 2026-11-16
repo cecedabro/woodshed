@@ -8,9 +8,27 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.config import Settings
+from app.covers import fetch_cover, save_cover
 from app.db import get_db
 from app.items_service import ItemIn, create_item, get_item, update_item
+from app.models import Item
 from app.templating import env, get_theme
+
+
+def _try_fetch_cover(item: Item, data: ItemIn, settings: Settings) -> None:
+    """Attempt to fetch cover art; never raise (SPEC 14.4)."""
+    if not data.release_group_id:
+        return
+    try:
+        data_bytes = fetch_cover(data.release_group_id, settings.MB_USER_AGENT)
+        if data_bytes is not None:
+            saved = save_cover(item.id, data_bytes, settings.MEDIA_DIR)
+            if saved:
+                item.has_cover = True
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Template helpers
@@ -130,6 +148,7 @@ async def get_new_item(request: Request) -> HTMLResponse:
 async def post_new_item(
     request: Request,
     db: Session = Depends(get_db),
+    settings: Settings = Depends(lambda: Settings()),
 ) -> RedirectResponse | HTMLResponse:
     """POST /items/new -- create item."""
     data, fmt_errors = await _extract_and_validate(request)
@@ -138,6 +157,8 @@ async def post_new_item(
 
     assert data is not None
     item = create_item(db, data)
+    db.commit()
+    _try_fetch_cover(item, data, settings)
     db.commit()
     return RedirectResponse(url=f"/items/{item.id}", status_code=303)
 
@@ -173,6 +194,7 @@ async def post_edit_item(
     request: Request,
     item_id: int,
     db: Session = Depends(get_db),
+    settings: Settings = Depends(lambda: Settings()),
 ) -> RedirectResponse | HTMLResponse:
     """POST /items/{id}/edit -- update item."""
     item = get_item(db, item_id)
@@ -187,5 +209,7 @@ async def post_edit_item(
 
     assert data is not None
     updated = update_item(db, item_id, data)
+    db.commit()
+    _try_fetch_cover(updated, data, settings)
     db.commit()
     return RedirectResponse(url=f"/items/{updated.id}", status_code=303)
