@@ -111,3 +111,10 @@ don't read that file, search it with `rg` if you need something.
   nav now expects "End" linking to `/`, page title expects "Woodshed".
 - Removed `run.html` from `backend/tests/ui_legacy.txt`.
 - All 434 tests pass, 99% coverage, `make check` clean.
+
+## By hand 2026-11-16: T83 + T79 (runner page JS)
+- `run-page.js` rewritten for the new `run.html` ids; what to show comes from the pure `runner-view.js` (tested in `tests/js/runner-view.test.js`). timer.js values are seconds, not ms.
+- `runner.js`: `finish()` logs the block in progress; skipping the last block finishes the session; `deps.bpmToLog` makes the logged BPM null with the metronome off (SPEC 6.3).
+- `run.html` renders per block the first Tab / PDF / Backing track row (`data-block`, later blocks `hidden`); `routes/run.py` gives `links`, "Next: …" and `m:ss`.
+- `components.css`: `[hidden] { display: none !important; }`; without it `hidden` does nothing on `.row`, `.split`, etc.
+- Run JS tests with `node --test 'tests/js/**/*.test.js'`; `node --test tests/js/` fails on Node 22.

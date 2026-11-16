@@ -2,7 +2,7 @@
 
 {% import "_ui.html" as ui %}
 
-{% block title %}Woodshed{% endblock %}
+{% block title %}Ready{% endblock %}
 
 {% block nav_left %}
 {{ ui.nav_link("End", "/", back=True) }}
@@ -26,7 +26,11 @@
         {{ ui.button("Start", kind="primary", icon_name="play", attrs={"id": "run-main"}) }}
         {{ ui.button("Skip", icon_name="skip", attrs={"id": "run-skip"}) }}
       </div>
-      {% call ui.group(attrs={"id": "run-links"}) %}{% endcall %}
+      {% call ui.group(attrs={"id": "run-links"}) %}
+        {%- for link in links %}
+        {{ ui.row(link.label, sub=link.sub, href=link.href, attrs={"data-block": link.block, "target": "_blank", "hidden": none if link.block == 0 else "hidden"}) }}
+        {%- endfor %}
+      {% endcall %}
       {{ ui.button("Record a take", kind="outline-danger", block=True, icon_name="record", attrs={"id": "run-record"}) }}
     </div>
     {% call ui.group() %}
@@ -38,6 +42,7 @@
     {% endcall %}
   </div>
   <div id="run-summary" hidden></div>
+  <template id="run-icons">{{ ui.icon("play") }}{{ ui.icon("pause") }}</template>
 </div>
 {% endblock %}
 
