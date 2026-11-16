@@ -5,7 +5,6 @@ login.html
 macros.html
 progress.html
 routines_delete.html
-routines_list.html
 routines_new.html
 run.html
 settings.html

@@ -78,3 +78,8 @@ don't read that file, search it with `rg` if you need something.
   kind="danger", type="submit")` in `.actions.actions-end`, and a ghost "Cancel" link back to
   the detail page. Nav_left has a back button to the item detail. Removed from `ui_legacy.txt`.
 - All 422 tests pass, 99% coverage, `make check` clean.
+- Migrated `routines_list.html` per "Routines" recipe: extends `base.html`, uses
+  `{% import "_ui.html" as ui %}`, `nav_right` with `ui.nav_link("New routine", "/routines/new", icon_name="plus")`,
+  `ui.section()` wrapping a `ui.group()` of `ui.row(r.name, sub=r.block_count ~ " blocks · " ~ r.total_minutes ~ " min", href=...)`,
+  and `ui.empty(...)` for the empty state. Removed from `ui_legacy.txt`.
+- All 425 tests pass, 99% coverage, `make check` clean.
