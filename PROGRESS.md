@@ -385,6 +385,15 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - `/attachments/{id}/download` is public (no login); `/media/{kind}/{id}` requires `require_login`. Both were correctly separated in `media.py`.
 - `make check` passes (358 tests, 99% coverage, ruff, mypy, jscheck, bandit, migration checks).
 
+## T78 — Tab viewer page (SPEC 3.6)
+- `backend/app/routes/items.py`: added `GET /items/{item_id}/tab/{attachment_id}` route — loads item + attachment (joinedload), returns 404 if item/attachment missing or attachment is not a tab kind, renders `items_tab.html`.
+- `backend/app/templates/items_tab.html`: new template extending `base.html` — renders `.tab-viewer` container with `#tab` div carrying `data-file="/media/attachment/{id}"`, loads alphaTab vendor script (classic) and `tab.js` module script.
+- `backend/app/static/js/tab.js`: ES module that reads `data-file` from `#tab`, fetches the tab file, and initializes alphaTab with `apiRenderer` and `output` div, passing `fileUrl` from `data-file`.
+- `backend/tests/test_tab_page.py`: 12 tests — 200 OK, title display, back link, `.tab-viewer` container, alphaTab classic script, tab.js module script, `data-file` URL, 404 for non-tab attachment, 404 for missing attachment, 404 for cross-item attachment, 404 for missing item, 404 has navigation.
+- `backend/app/static/vendor/alphatab/alphaTab.min.js`: referenced as classic script src.
+- Test helpers use stdlib `html.parser` and `re` (no bs4 dependency).
+- `make check` passes (386 tests, 99% coverage, ruff, mypy, jscheck, bandit, migration checks).
+
 ## T57 — Routine block move endpoint (SPEC 4.2)
 - `backend/app/routes/routines.py`: added `post_move_block` route at `POST /routines/{id}/blocks/{block_id}/move` — reads `direction` from query param, performs a no-op for boundary moves (first block up, last block down), and swaps positions via a temp-position workaround to preserve the `(routine_id, position)` unique constraint. Returns HTMX fragment via `_render_block_list`.
 - `backend/app/templates/_routine_blocks.html`: new partial rendering block rows with ▲/▼ move buttons using `ui.button()` macros; direction sent via query param in form action URL (no hidden inputs needed).

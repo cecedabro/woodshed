@@ -103,7 +103,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_routine_editor.py -q
 - [x] T58: Routine editor, move (SPEC 4.2): `POST /routines/{id}/blocks/{block_id}/move?direction=up|down` returns the fragment. Write `tests/test_routine_move.py` (A,B,C: move A down twice → B,C,A; move C up → A,C,B; moving the first up or the last down changes nothing; bad direction → 422). Keep the unique (routine_id, position) constraint working (swap in two steps).
   accept: cd backend && uv run pytest tests/test_routine_move.py -q
-- [ ] T78: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab; redo of T16): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Use the new layout (docs/design.md: page extends `base.html`, `.tab-viewer` container). Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment and for an attachment of another item).
+- [x] T78: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab; redo of T16): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Use the new layout (docs/design.md: page extends `base.html`, `.tab-viewer` container). Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment and for an attachment of another item).
   accept: cd backend && uv run pytest tests/test_tab_page.py -q && node --check app/static/js/tab.js
 
 ## Round 6: design system (docs/design.md; the CSS and macros exist, you compose pages)

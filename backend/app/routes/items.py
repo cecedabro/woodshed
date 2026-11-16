@@ -169,6 +169,43 @@ def post_upload_attachment(
     return RedirectResponse(f"/items/{item_id}", status_code=303)
 
 
+@router.get("/items/{item_id}/tab/{attachment_id}", response_model=None)
+def get_tab_viewer(
+    request: Request, item_id: int, attachment_id: int
+) -> HTMLResponse | RedirectResponse:
+    with request.app.state.sessionmaker() as db:
+        try:
+            item = db.scalar(
+                select(Item).where(Item.id == item_id).options(joinedload(Item.attachments))
+            )
+            if item is None:
+                from fastapi import HTTPException
+
+                raise HTTPException(status_code=404, detail="Item not found")
+            att = db.scalar(
+                select(Attachment).where(
+                    Attachment.id == attachment_id, Attachment.item_id == item_id
+                )
+            )
+            if att is None:
+                from fastapi import HTTPException
+
+                raise HTTPException(status_code=404, detail="Attachment not found")
+            if att.kind != "tab":
+                from fastapi import HTTPException
+
+                raise HTTPException(status_code=404, detail="Not a tab attachment")
+        finally:
+            db.close()
+    return HTMLResponse(
+        env.get_template("items_tab.html").render(
+            active="items",
+            attachment=att,
+            item=item,
+        )
+    )
+
+
 @router.post("/items/{item_id}/attachments/{attachment_id}/_delete", response_model=None)
 def post_delete_attachment(request: Request, item_id: int, attachment_id: int) -> RedirectResponse:
     settings = request.app.state.settings
@@ -178,7 +215,7 @@ def post_delete_attachment(request: Request, item_id: int, attachment_id: int) -
             if item is None:
                 from fastapi import HTTPException
 
-                raise HTTPException(status_code=404, detail="Item not found")
+                raise HTTPException(status_code=404, detail="Attachment not found")
             att = db.scalar(
                 select(Attachment).where(
                     Attachment.id == attachment_id, Attachment.item_id == item_id
