@@ -19,7 +19,7 @@ from jinja2 import BaseLoader, Environment
 
 def _svg_bar_count(svg_html: str) -> int:
     """Count bar <rect> elements (not the background rect)."""
-    return svg_html.count('fill="var(--secondary)"')
+    return svg_html.count('class="chart-bar"')
 
 
 def _svg_bar_heights(svg_html: str) -> list[float]:
@@ -28,7 +28,7 @@ def _svg_bar_heights(svg_html: str) -> list[float]:
     from contextlib import suppress
 
     heights: list[float] = []
-    for m in re.finditer(r'<rect\b([^>]*?fill="var\(--secondary\)"[^>]*?)>', svg_html):
+    for m in re.finditer(r'<rect\b([^>]*?class="chart-bar"[^>]*?)>', svg_html):
         inner = m.group(1)
         hm = re.search(r'\bheight="([^"]*)"', inner)
         if hm:
@@ -94,7 +94,7 @@ class TestSVGGolLine:
     def test_goal_line_present(self):
         """SVG must contain a dashed <line> element for the goal."""
         svg = _make_svg([30] * 12, goal=45)
-        assert "stroke-dasharray" in svg
+        assert 'class="chart-goal"' in svg
         assert "45 min goal" in svg
 
 
@@ -150,28 +150,29 @@ def _make_svg(minutes: list[int], goal: int) -> str:
      viewBox="0 0 {{ cw }} {{ ch }}"
      width="100%" height="100%" class="progress-svg" role="img"
      aria-label="Practice minutes per week for the last 12 weeks">
-    <rect x="0" y="0" width="{{ cw }}" height="{{ ch }}" fill="var(--bg-alt)" rx="8"/>
+    <rect x="0" y="0" width="{{ cw }}" height="{{ ch }}" fill="var(--c-bg)" rx="8"/>
     {% set gy = pt + uh - (goal / mm * uh) %}
-    <line x1="{{ pl }}" y1="{{ gy }}" x2="{{ cw - pr }}" y2="{{ gy }}"
-          stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
-    <text x="{{ cw - pr }}" y="{{ gy - 6 }}"
-          fill="var(--accent)" font-size="11" text-anchor="end">{{ goal }} min goal</text>
+    <line class="chart-goal" x1="{{ pl }}" y1="{{ gy }}"
+          x2="{{ cw - pr }}" y2="{{ gy }}"/>
+    <text class="chart-label" x="{{ cw - pr }}" y="{{ gy - 6 }}"
+          text-anchor="end">{{ goal }} min goal</text>
     {% for i, week in enumerate(weeks) %}
         {% set bx = pl + i * (bw + bg) %}
         {% set bh = week.minutes / mm * uh %}
         {% set by = pt + uh - bh %}
-        <rect x="{{ bx }}" y="{{ by }}" width="{{ bw }}" height="{{ bh }}"
-              fill="var(--secondary)" rx="2"
+        <rect class="chart-bar" x="{{ bx }}" y="{{ by }}"
+              width="{{ bw }}" height="{{ bh }}"
+              rx="2"
               opacity="{{ 0.5 + 0.5 * (week.minutes / mm) }}">
         </rect>
         {% if week.minutes %}
-        <text x="{{ bx + bw / 2 }}" y="{{ by - 4 }}"
-              fill="var(--text-dim)" font-size="10" text-anchor="middle">
+        <text class="chart-label" x="{{ bx + bw / 2 }}" y="{{ by - 4 }}"
+              text-anchor="middle">
             {{ week.minutes }}
         </text>
         {% endif %}
-        <text x="{{ bx + bw / 2 }}" y="{{ ch - 10 }}"
-              fill="var(--text-dim)" font-size="10" text-anchor="middle">
+        <text class="chart-label" x="{{ bx + bw / 2 }}" y="{{ ch - 10 }}"
+              text-anchor="middle">
             {{ week.monday.strftime('%b %-d') if week.monday }}
         </text>
     {% endfor %}
