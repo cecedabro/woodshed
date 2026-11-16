@@ -111,6 +111,14 @@ def log_block(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # SPEC 5.6: copy item title from the database; unknown item_id → 422
+    item_title = ""
+    if payload.item_id is not None:
+        item = db.get(Item, payload.item_id)
+        if item is None:
+            raise HTTPException(status_code=422, detail="Item not found")
+        item_title = item.title
+
     # SPEC 5.5: clamp played_seconds to [0, elapsed_since_start + 60]
     now = clock_now()
     elapsed = (now - session.started_at).total_seconds()
@@ -124,7 +132,7 @@ def log_block(
     block = SessionBlock(
         session_id=session.id,
         item_id=payload.item_id,
-        item_title=payload.item_title,
+        item_title=item_title,
         position=payload.position,
         planned_seconds=payload.planned_seconds,
         played_seconds=clamped,
