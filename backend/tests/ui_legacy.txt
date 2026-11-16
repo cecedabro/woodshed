@@ -4,6 +4,5 @@
 login.html
 macros.html
 progress.html
-run.html
 settings.html
 legacy_base.html

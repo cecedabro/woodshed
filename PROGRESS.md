@@ -96,3 +96,18 @@ don't read that file, search it with `rg` if you need something.
 - Removed both templates from `backend/tests/ui_legacy.txt`.
 - No test assertion updates needed (existing assertions matched new markup).
 - All 431 tests pass, 98.57% coverage, `make check` clean.
+
+## Runner page migration (T83)
+- Rewrote `backend/app/templates/run.html` to extend `base.html` and use new UI macros:
+  `.stack-lg` wrapper, `.runner-head` with title/sub, `.countdown` with progress bar,
+  `.split` for controls/right panel, `ui.button()` with explicit IDs (`run-main`, `run-plus`,
+  `run-skip`, `run-record`, `run-tap`, `run-bpm`), `ui.segmented()` for beats, `ui.stepper()`
+  for tempo, `ui.switch_row()` and `ui.range_row()` for metronome/volume.
+- Updated `backend/app/routes/run.py` context: added `routine_id` ("null" for free practice),
+  `first_time` (formatted via `_fmt()` helper), `start_bpm`, `blocks_count`, `next_text`.
+- Updated `backend/tests/test_runner_page.py`: nav now links to `/`, controls checked by ID,
+  attachments container uses `id="run-links"` with `group` class.
+- Updated `backend/tests/test_free_practice.py`: controls checked by ID, attachments by container,
+  nav now expects "End" linking to `/`, page title expects "Woodshed".
+- Removed `run.html` from `backend/tests/ui_legacy.txt`.
+- All 434 tests pass, 99% coverage, `make check` clean.

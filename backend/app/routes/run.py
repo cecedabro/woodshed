@@ -4,6 +4,7 @@ Routes: GET /run/item/{item_id}, GET /run/{routine_id}
 """
 
 import json
+from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Query, Request
@@ -17,6 +18,10 @@ from app.templating import env, get_theme
 router = APIRouter()
 
 DEFAULT_BPM = 80
+
+
+def _fmt(seconds: int) -> str:
+    return str(timedelta(minutes=seconds // 60, seconds=seconds % 60))
 
 
 def runner_blocks(blocks: Any) -> list[dict[str, Any]]:
@@ -59,12 +64,21 @@ def get_run_item(
             position=0,
         )
     ]
+    _first_time = _fmt(minutes * 60)
+    start_bpm = runner_blocks(blocks)[0]["start_bpm"]
+    blocks_count = len(blocks)
+    next_text = "next"
     return HTMLResponse(
         env.get_template("run.html").render(
             active="run",
             routine=None,
+            routine_id="null",
             blocks=blocks,
+            blocks_count=blocks_count,
+            first_time=_first_time,
+            next_text=next_text,
             blocks_json=json.dumps(runner_blocks(blocks)),
+            start_bpm=start_bpm,
             theme=get_theme(request.app),
         )
     )
@@ -93,12 +107,21 @@ def get_run_routine(
             blocks = routine.blocks
         finally:
             db.close()
+    _first_time = _fmt(blocks[0].minutes * 60)
+    start_bpm = runner_blocks(blocks)[0]["start_bpm"]
+    blocks_count = len(blocks)
+    next_text = "next"
     return HTMLResponse(
         env.get_template("run.html").render(
             active="run",
             routine=routine,
+            routine_id=str(routine.id),
             blocks=blocks,
+            blocks_count=blocks_count,
+            first_time=_first_time,
+            next_text=next_text,
             blocks_json=json.dumps(runner_blocks(blocks)),
+            start_bpm=start_bpm,
             theme=get_theme(request.app),
         )
     )

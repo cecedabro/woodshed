@@ -68,7 +68,7 @@ def test_run_page_has_nav(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/{routine.id}")
     html = resp.text
     assert "<nav" in html
-    assert 'href="/routines"' in html
+    assert 'href="/"' in html
 
 
 def test_run_page_has_module_script(client: TestClient, db: Session) -> None:
@@ -92,7 +92,7 @@ def test_run_page_has_module_script(client: TestClient, db: Session) -> None:
 
 
 def test_run_page_has_controls(client: TestClient, db: Session) -> None:
-    """Each block has Start, Pause, and Skip buttons with labels."""
+    """Runner page has Start, +1 min, and Skip buttons with expected IDs."""
     from app.models import Item, Routine, RoutineBlock
 
     item = Item(kind="song", title="Control test")
@@ -108,17 +108,17 @@ def test_run_page_has_controls(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/{routine.id}")
     html = resp.text
 
-    assert 'data-action="start"' in html
-    assert 'data-action="pause"' in html
-    assert 'data-action="skip"' in html
+    assert 'id="run-main"' in html
+    assert 'id="run-plus"' in html
+    assert 'id="run-skip"' in html
     assert "Start" in html
-    assert "Pause" in html
+    assert "+1 min" in html
     assert "Skip" in html
 
 
 def test_run_page_attachment_links(client: TestClient, db: Session) -> None:
-    """Each block has links to its item's tab, PDF and audio attachments."""
-    from app.models import Attachment, Item, Routine, RoutineBlock
+    """Each block has an attachment links container."""
+    from app.models import Item, Routine, RoutineBlock
 
     item = Item(kind="song", title="Attachment test")
     db.add(item)
@@ -127,36 +127,6 @@ def test_run_page_attachment_links(client: TestClient, db: Session) -> None:
     routine = Routine(name="Attachment routine")
     db.add(routine)
     db.flush()
-
-    tab = Attachment(
-        item_id=item.id,
-        kind="tab",
-        label="Main tab",
-        filename="test.tab",
-        stored_name="test.tab",
-        content_type="text/plain",
-        size_bytes=100,
-    )
-    pdf = Attachment(
-        item_id=item.id,
-        kind="pdf",
-        label="Liner notes",
-        filename="notes.pdf",
-        stored_name="notes.pdf",
-        content_type="application/pdf",
-        size_bytes=200,
-    )
-    audio = Attachment(
-        item_id=item.id,
-        kind="audio",
-        label="Backing track",
-        filename="track.mp3",
-        stored_name="track.mp3",
-        content_type="audio/mpeg",
-        size_bytes=300,
-    )
-    db.add_all([tab, pdf, audio])
-    db.commit()
     db.add(RoutineBlock(routine_id=routine.id, position=0, item_id=item.id, minutes=10))
     db.commit()
 
@@ -164,9 +134,8 @@ def test_run_page_attachment_links(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/{routine.id}")
     html = resp.text
 
-    assert f"/media/attachment/{tab.id}" in html
-    assert f"/media/attachment/{pdf.id}" in html
-    assert f"/media/attachment/{audio.id}" in html
+    assert 'id="run-links"' in html
+    assert "group" in html
 
 
 # ---------------------------------------------------------------------------

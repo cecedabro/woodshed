@@ -1,90 +1,43 @@
-{% extends "legacy_base.html" %}
+{% extends "base.html" %}
 
-{% block title %}Woodshed — Running {{ routine.name if routine else "Free Practice" }}{% endblock %}
+{% import "_ui.html" as ui %}
+
+{% block title %}Woodshed{% endblock %}
+
+{% block nav_left %}
+{{ ui.nav_link("End", "/", back=True) }}
+{% endblock %}
 
 {% block content %}
-<div class="runner" data-blocks="{{ blocks_json }}" data-routine-id="{{ routine.id if routine else 'null' }}">
-
-<h1>{{ routine.name if routine else blocks[0].item.title }}</h1>
-
-{% if routine %}
-<a href="/routines" class="back-link">&larr; Routines</a>
-{% else %}
-<a href="/library" class="back-link">&larr; Library</a>
-{% endif %}
-
-<!-- Active block display -->
-<div class="active-block">
-  <h2 class="current-block-title">Not started</h2>
-  <div class="active-controls">
-    <div class="timer-display" data-timer>00:00</div>
-    <div class="bpm-display block-bpm">-- BPM</div>
+<div class="runner stack-lg" data-blocks="{{ blocks_json }}" data-routine-id="{{ routine_id }}">
+  <div class="blocks" id="run-blocks" aria-hidden="true">{% for b in blocks %}<span></span>{% endfor %}</div>
+  <div class="runner-head"><p class="runner-title" id="run-title">{{ blocks[0].item.title }}</p>
+    <p class="runner-sub" id="run-sub">{{ next_text }}</p></div>
+  <div class="countdown">
+    <p class="countdown-time" id="run-time">{{ first_time }}</p>
+    <progress class="bar" id="run-bar" value="0" max="1" aria-label="Time used in this block"></progress>
+    <p class="countdown-note" id="run-note">of {{ first_time }}</p>
   </div>
-</div>
-
-<!-- Metronome controls (SPEC 6.2, 6.3) -->
-<div class="metro-controls">
-  <div class="bpm-buttons">
-    <button type="button" id="bpm-minus-5" class="btn btn-sm" aria-label="BPM -5">-5</button>
-    <button type="button" id="bpm-minus-1" class="btn btn-sm" aria-label="BPM -1">-1</button>
-    <button type="button" id="bpm-plus-1" class="btn btn-sm" aria-label="BPM +1">+1</button>
-    <button type="button" id="bpm-plus-5" class="btn btn-sm" aria-label="BPM +5">+5</button>
-    <button type="button" id="tap-tempo" class="btn btn-sm" aria-label="Tap tempo">Tap</button>
+  <div class="split">
+    <div class="stack">
+      <div class="beats" id="run-beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div class="actions-split">
+        {{ ui.button("+1 min", attrs={"id": "run-plus"}) }}
+        {{ ui.button("Start", kind="primary", icon_name="play", attrs={"id": "run-main"}) }}
+        {{ ui.button("Skip", icon_name="skip", attrs={"id": "run-skip"}) }}
+      </div>
+      {% call ui.group(attrs={"id": "run-links"}) %}{% endcall %}
+      {{ ui.button("Record a take", kind="outline-danger", block=True, icon_name="record", attrs={"id": "run-record"}) }}
+    </div>
+    {% call ui.group() %}
+      {% call ui.row("Tempo", chevron_=False) %}{{ ui.stepper("tempo", start_bpm, "run-bpm", steps=(-1, 1)) }}{% endcall %}
+      {% call ui.row("", chevron_=False) %}{{ ui.button("\u22125", size="small", attrs={"data-bpm": "-5", "aria-label": "5 slower"}) }}{{ ui.button("+5", size="small", attrs={"data-bpm": "5", "aria-label": "5 faster"}) }}{{ ui.button("Tap", size="small", attrs={"id": "run-tap"}) }}{% endcall %}
+      {% call ui.row("Beats", chevron_=False) %}{{ ui.segmented("beats", "Beats per bar", [(2, "2"), (3, "3"), (4, "4"), (6, "6")], selected=4) }}{% endcall %}
+      {{ ui.switch_row("metronome", "Metronome", checked=True, attrs={"id": "run-metronome"}) }}
+      {{ ui.range_row("volume", "Volume", 0.7, attrs={"id": "run-volume"}) }}
+    {% endcall %}
   </div>
-  <div class="metro-options">
-    <label>
-      Beats:
-      <select id="beats-per-bar" aria-label="Beats per bar">
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4" selected>4</option>
-        <option value="5">5</option>
-        <option value="6">6</option>
-        <option value="7">7</option>
-      </select>
-    </label>
-    <button type="button" id="metronome-toggle" class="btn btn-sm">Metronome: ON</button>
-    <label>
-      Volume:
-      <input type="range" id="metronome-volume" min="0" max="1" step="0.05" value="0.5" aria-label="Metronome volume">
-    </label>
-  </div>
-</div>
-
-{% for b in blocks %}
-<section class="block" data-position="{{ b.position }}">
-    <h2>{{ b.item.title }}</h2>
-    <div class="block-meta">
-        <span class="block-duration">{{ b.minutes }} min ({{ b.minutes * 60 }}s)</span>
-        {% if b.bpm is not none %}
-        <span class="block-bpm">{{ b.bpm }} BPM</span>
-        {% endif %}
-    </div>
-    <div class="block-attachments">
-        {% set tab = b.item.attachments | selectattr("kind", "equalto", "tab") | first %}
-        {% if tab %}
-        <a href="/media/attachment/{{ tab.id }}" class="block-att-link" target="_blank">Tab</a>
-        {% endif %}
-        {% set pdf = b.item.attachments | selectattr("kind", "equalto", "pdf") | first %}
-        {% if pdf %}
-        <a href="/media/attachment/{{ pdf.id }}" class="block-att-link" target="_blank">PDF</a>
-        {% endif %}
-        {% set audio = b.item.attachments | selectattr("kind", "equalto", "audio") | first %}
-        {% if audio %}
-        <a href="/media/attachment/{{ audio.id }}" class="block-att-link" target="_blank">Audio</a>
-        {% endif %}
-    </div>
-    <div class="block-controls">
-        <button type="button" class="btn btn-sm" data-action="start" aria-label="Start block {{ b.position + 1 }}">Start</button>
-        <button type="button" class="btn btn-sm" data-action="pause" aria-label="Pause block {{ b.position + 1 }}">Pause</button>
-        <button type="button" class="btn btn-sm btn-danger" data-action="skip" aria-label="Skip block {{ b.position + 1 }}">Skip</button>
-    </div>
-</section>
-{% endfor %}
-
-<!-- Session summary (SPEC 5.3) -->
-<div class="session-summary" style="display:none;"></div>
-
+  <div id="run-summary" hidden></div>
 </div>
 {% endblock %}
 
