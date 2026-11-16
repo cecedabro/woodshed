@@ -26,6 +26,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             origin = request.headers.get("origin")
             if origin is not None:
                 expected = f"{request.url.scheme}://{request.url.hostname}"
+                if request.url.port:
+                    expected = f"{expected}:{request.url.port}"
                 if origin != expected:
                     return JSONResponse(
                         {"detail": "Forbidden"},

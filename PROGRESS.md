@@ -348,3 +348,10 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   BPM values, delta classes, no-section when empty, item link, table headers).
 - Fixed E501 violations in `stats.py` by splitting window function SQL across multiple lines.
 - Fixed `list[dict]` → `list[dict[str, str | int]]` to satisfy mypy strict typing.
+
+## T50 — Origin check (SPEC 2.6)
+- `backend/app/security.py`: fixed origin comparison to include port when present. `request.url.hostname`
+  alone misses the port; added `if request.url.port: expected = f"{expected}:{request.url.port}"` so
+  `Origin: http://localhost:8765` matches `scheme://host:port`.
+- `backend/tests/test_origin.py`: 6 tests — same-origin POST with port passes, foreign origin POST→403,
+  HTTPS same-origin passes, HTTPS scheme mismatch→403, no Origin header→not 403, GET with foreign Origin→not 403.
