@@ -115,7 +115,7 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && uv run pytest tests/test_theme.py tests/test_ui_rules.py -q
 - [~] T60: Migrate Home (`home.html`) per the recipe. Update `tests/test_home.py` where it checked old markup; add a check that the first routine is rendered with class `start` and the progress shows "of 120 min". — skipped: changed protected paths: backend/app/templates/base.html (fix the code, not the tests/spec)
   accept: cd backend && ! grep -qx "home.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_home.py tests/test_week_totals.py -q
-- [ ] T61: Migrate Library (`library.html`) per the recipe (search, kind filter as `segmented_links`, grouped rows, empty state).
+- [x] T61: Migrate Library (`library.html`) per the recipe (search, kind filter as `segmented_links`, grouped rows, empty state).
   accept: cd backend && ! grep -qx "library.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_library.py -q
 - [ ] T62: Migrate the item page (`items_detail.html`) per the recipe, including files, upload form and tempo section.
   accept: cd backend && ! grep -qx "items_detail.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_item_page.py tests/test_attachments.py tests/test_tempo_history.py -q

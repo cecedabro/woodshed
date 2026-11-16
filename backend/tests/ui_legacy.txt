@@ -6,7 +6,6 @@ items_delete.html
 items_detail.html
 items_edit.html
 items_new.html
-library.html
 login.html
 macros.html
 progress.html

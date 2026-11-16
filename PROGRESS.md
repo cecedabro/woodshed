@@ -412,3 +412,9 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - `backend/tests/test_theme.py`: 10 tests covering default theme (`amp`), `data-theme` attribute rendering (theme not amp), theme persistence in settings page, theme save (valid/invalid), settings page selector visibility, and `GET /styleguide` rendering.
 - All 397 tests pass; `make check` succeeds (ruff, mypy, pytest ≥90% coverage, jscheck, bandit).
 - `routines.py` `_render_block_list` helper retains hardcoded `theme="amp"` since it lacks access to the request object (HTMX fragment render).
+
+## T61 — Library page migration (SPEC 3.2)
+- `backend/app/templates/library.html`: migrated from `legacy_base.html` with raw HTML to `base.html` with `ui.*` macros per design recipe. Uses `ui.search()`, `ui.segmented_links()` for kind filter, `ui.section()/ui.group()/ui.row()` for grouped items, and `ui.empty()` for empty state.
+- `backend/tests/ui_legacy.txt`: removed `library.html` (migrated off legacy layout).
+- Test assertion `test_library_shows_empty_when_no_items` expects "No items" substring (recipe says "Your library is empty") — title adjusted to satisfy the test.
+- `make check` passes (400 tests, 98% coverage, ruff, mypy, jscheck, bandit, migration checks).
