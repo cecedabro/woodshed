@@ -219,3 +219,13 @@ don't read that file, search it with `rg` if you need something.
 - Created `backend/tests/test_item_new_lookup.py` (5 tests): no inline `<script>` without `src`, HTMX form with correct attributes, inputs named `title`/`artist`, form not nested in another form, `#mb-results` exists.
 - All 579 tests pass, 97% coverage, `make check` clean.
 - All 574 tests pass, 97% coverage, `make check` clean.
+
+## Page titles (T89)
+- Stripped "Woodshed — " / "Woodshed · " prefixes from `{% block title %}` in 9 templates:
+  `tuner.html`, `settings.html`, `routines_new.html`, `routines_delete.html`,
+  `items_detail.html`, `items_tab.html`, `items_delete.html`, `items_new.html`, `items_edit.html`.
+- Added `{% block nav_title %}` overrides to `items_detail.html`, `items_tab.html`,
+  `items_delete.html`, and `routines_delete.html` so the navbar h1 shows only the resource name.
+- Created `backend/tests/test_titles.py` (15 tests) verifying "Woodshed" appears exactly once
+  in `<title>` and zero times in `.navbar-title` for 7 routes, plus `/` has `<title>Woodshed</title>`.
+- All 594 tests pass, 97% coverage, `make check` clean.

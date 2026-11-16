@@ -1,7 +1,8 @@
 {% import "_ui.html" as ui %}
 {% extends "base.html" %}
 
-{% block title %}Woodshed — Delete {{ item.title }}{% endblock %}
+{% block title %}Delete {{ item.title }}{% endblock %}
+{% block nav_title %}Delete {{ item.title }}{% endblock %}
 {% block nav_left %}{{ ui.nav_link("Back", "/items/" ~ item.id, back=True) }}{% endblock %}
 
 {% block content %}

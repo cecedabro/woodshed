@@ -2,7 +2,8 @@
 {% from "_macros.html" import render_tempo_svg %}
 {% extends "base.html" %}
 
-{% block title %}Woodshed — {{ item.title }}{% endblock %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block nav_title %}{{ item.title }}{% endblock %}
 {% block nav_right %}{{ ui.nav_link("Edit", "/items/" ~ item.id ~ "/edit") }}{% endblock %}
 
 {% block content %}
