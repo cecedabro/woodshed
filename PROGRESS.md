@@ -13,6 +13,12 @@ don't read that file, search it with `rg` if you need something.
 - Created `backend/tests/test_metronome_page.py` (12 tests): 200 status, active tab, mutual links, module script tag, all ID elements, beats selector options, BPM display, stepper buttons, tap button, volume input, start button, beats display.
 - All 610 tests pass, 97% coverage, `make check` clean.
 
+## T91: Metronome page behaviour
+- Created `backend/app/static/js/metronome-prefs.js` with pure `loadPrefs(storage)` and `savePrefs(storage, prefs)` functions handling localStorage persistence (BPM, beats, volume) with fallback defaults (80 bpm, 4 beats, 0.5 volume) and clamping (bpm 20–400, volume 0–1).
+- Implemented `backend/app/static/js/metronome-page.js` to wire T90 markup to the `Metronome` class: `AudioContext` created on first Start click, Start/Stop toggles label, BPM buttons use `clampBpm`, Tap uses `tapTempo`, beat dots highlight via `beatIndex` from `runner-view.js`, BPM/beats changes apply while running, volume syncs live.
+- Created `backend/tests/js/metronome-prefs.test.js` (13 tests): defaults when empty, round trip, bad volume/BPM/clamping, beats validation, savePrefs writes correct keys.
+- `make check` clean: 610 tests pass, 97% coverage.
+
 ## Gotchas so far
 - Login: one `LoginRequiredMiddleware` in `app/auth.py` guards everything except
   `OPEN_PATHS` / `/static/`. Routes need no login dependency. The `client` fixture is
