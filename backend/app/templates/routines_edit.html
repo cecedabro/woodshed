@@ -1,19 +1,27 @@
-{% extends "legacy_base.html" %}
-
-{% block title %}Woodshed — Edit {{ routine.name }}{% endblock %}
-
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ routine.name }}{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Routines", "/routines", back=True) }}{% endblock %}
+{% block nav_right %}{% if blocks %}{{ ui.nav_link("Run", "/run/" ~ routine.id, icon_name="play") }}{% endif %}{% endblock %}
 {% block content %}
-<div class="item-detail">
-    <div class="item-header">
-        <h1>Edit {{ routine.name }}</h1>
-    </div>
+<div id="blocks">{% include "partials/routine_blocks.html" %}</div>
 
-    <div id="routine-blocks">
-        {% include "_routine_blocks.html" %}
-    </div>
+{% call ui.section("Add a block", footer="Minutes 1–120. BPM is optional (20–400).") %}
+  {% if items %}
+  <form method="post" action="{{ base }}/blocks" hx-post="{{ base }}/blocks" hx-target="#blocks" class="stack">
+    {% call ui.group() %}
+      {{ ui.select("item_id", "Song or exercise", items) }}
+      {{ ui.field("minutes", "Minutes", 5, type="number", required=True, attrs={"min": 1, "max": 120}) }}
+      {{ ui.field("bpm", "BPM (optional)", type="number", attrs={"min": 20, "max": 400}) }}
+    {% endcall %}
+    <div class="actions actions-end">{{ ui.button("Add block", kind="primary", type="submit") }}</div>
+  </form>
+  {% else %}
+  {% call ui.group() %}{{ ui.empty("Your library is empty", "Add a song or exercise first.", "/items/new", "Add to library") }}{% endcall %}
+  {% endif %}
+{% endcall %}
 
-    <p>Add blocks to this routine to start practising.</p>
-
-    <a href="/routines" class="btn">Back to Routines</a>
-</div>
+{% call ui.section() %}
+  {% call ui.group() %}{{ ui.row("Delete routine…", href="/routines/" ~ routine.id ~ "/delete", tone="danger") }}{% endcall %}
+{% endcall %}
 {% endblock %}

@@ -1,0 +1,19 @@
+{%- import "_ui.html" as ui %}
+{#- The editor's block list (docs/design.md, routine editor). Every action swaps #blocks. -#}
+{% call ui.section("Blocks", footer=total_minutes ~ " min in total") %}
+  {% if blocks %}
+  {% call ui.group() %}
+    {% for b in blocks %}
+      {% call ui.row(b.title, sub=b.minutes ~ " min" ~ (" · " ~ b.bpm ~ " bpm" if b.bpm else ""), chevron_=False, attrs={"data-block-id": b.id, "data-position": b.position}) %}
+        <div class="cluster">
+        {{ ui.button("Up", size="small", attrs={"hx-post": base ~ "/blocks/" ~ b.id ~ "/move?direction=up", "hx-target": "#blocks", "aria-label": "Move " ~ b.title ~ " up"}) }}
+        {{ ui.button("Down", size="small", attrs={"hx-post": base ~ "/blocks/" ~ b.id ~ "/move?direction=down", "hx-target": "#blocks", "aria-label": "Move " ~ b.title ~ " down"}) }}
+        {{ ui.button("Remove", size="small", kind="ghost", attrs={"hx-post": base ~ "/blocks/" ~ b.id ~ "/remove", "hx-target": "#blocks", "aria-label": "Remove " ~ b.title}) }}
+        </div>
+      {% endcall %}
+    {% endfor %}
+  {% endcall %}
+  {% else %}
+  {% call ui.group() %}{{ ui.empty("No blocks yet", "Add a song or exercise below.", icon_name="routines") }}{% endcall %}
+  {% endif %}
+{% endcall %}

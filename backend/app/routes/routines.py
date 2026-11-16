@@ -2,16 +2,19 @@
 
 Routes: GET /routines, GET/POST /routines/new, GET /routines/{id}/edit,
         GET/POST /routines/{id}/delete,
+        POST /routines/{id}/blocks, POST /routines/{id}/blocks/{block_id}/remove,
         POST /routines/{id}/blocks/{block_id}/move
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Routine
+from app.models import Item, Routine, RoutineBlock
 from app.templating import env, get_theme
 
 router = APIRouter()
@@ -96,21 +99,18 @@ async def post_new_routine(
 def get_routine_edit(
     routine_id: int,
     request: Request,
-) -> HTMLResponse | RedirectResponse:
-    with request.app.state.sessionmaker() as db:
-        try:
-            routine = db.get(Routine, routine_id)
-        finally:
-            db.close()
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    routine = db.get(Routine, routine_id)
     if routine is None:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Routine not found")
+    items = db.execute(select(Item.id, Item.title).order_by(Item.title)).all()
     return HTMLResponse(
         env.get_template("routines_edit.html").render(
             active="routines",
-            routine=routine,
+            items=[(i.id, i.title) for i in items],
             theme=get_theme(request.app),
+            **_blocks_context(routine, db),
         )
     )
 
@@ -157,8 +157,11 @@ def post_delete_routine(
     return RedirectResponse(url="/routines", status_code=303)
 
 
-def _render_block_list(routine: Routine, db: Session) -> str:
-    """Render the block list fragment for a routine."""
+MAX_BLOCKS = 30
+
+
+def _blocks_context(routine: Routine, db: Session) -> dict[str, Any]:
+    """What `partials/routine_blocks.html` needs."""
     blocks = (
         db.execute(
             text(
@@ -173,11 +176,92 @@ def _render_block_list(routine: Routine, db: Session) -> str:
         .mappings()
         .fetchall()
     )
-    return env.get_template("_routine_blocks.html").render(
-        routine=routine,
-        blocks=list(blocks),
-        theme="amp",
+    return {
+        "routine": routine,
+        "base": f"/routines/{routine.id}",
+        "blocks": list(blocks),
+        "total_minutes": sum(b["minutes"] for b in blocks),
+    }
+
+
+def _render_block_list(routine: Routine, db: Session) -> str:
+    """Render the block list fragment for a routine."""
+    return env.get_template("partials/routine_blocks.html").render(**_blocks_context(routine, db))
+
+
+def _int_or_none(raw: object) -> int | None:
+    if raw is None or (isinstance(raw, str) and raw.strip() == ""):
+        return None
+    try:
+        return int(str(raw))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Not a whole number") from None
+
+
+@router.post("/routines/{routine_id}/blocks", response_model=None)
+async def post_add_block(
+    routine_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Add a block at the end (SPEC 4.1, 4.2). Returns the block list fragment."""
+    routine = db.get(Routine, routine_id)
+    if routine is None:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    form = await request.form()
+    item_id = _int_or_none(form.get("item_id"))
+    minutes = _int_or_none(form.get("minutes"))
+    bpm = _int_or_none(form.get("bpm"))
+    if item_id is None or db.get(Item, item_id) is None:
+        raise HTTPException(status_code=422, detail="Choose a song or exercise")
+    if minutes is None or not 1 <= minutes <= 120:
+        raise HTTPException(status_code=422, detail="Minutes must be 1–120")
+    if bpm is not None and not 20 <= bpm <= 400:
+        raise HTTPException(status_code=422, detail="BPM must be 20–400")
+    count = db.scalar(
+        select(func.count()).select_from(RoutineBlock).where(RoutineBlock.routine_id == routine_id)
     )
+    if (count or 0) >= MAX_BLOCKS:
+        raise HTTPException(status_code=422, detail=f"A routine has at most {MAX_BLOCKS} blocks")
+    db.add(
+        RoutineBlock(
+            routine_id=routine_id, position=count or 0, item_id=item_id, minutes=minutes, bpm=bpm
+        )
+    )
+    db.commit()
+    return HTMLResponse(_render_block_list(routine, db))
+
+
+@router.post("/routines/{routine_id}/blocks/{block_id}/remove", response_model=None)
+def post_remove_block(
+    routine_id: int,
+    block_id: int,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Remove a block; later blocks move up so positions stay 0..n-1."""
+    routine = db.get(Routine, routine_id)
+    if routine is None:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    block = db.scalar(
+        select(RoutineBlock).where(
+            RoutineBlock.id == block_id, RoutineBlock.routine_id == routine_id
+        )
+    )
+    if block is None:
+        raise HTTPException(status_code=404, detail="Block not found in routine")
+    removed_at = block.position
+    db.delete(block)
+    db.flush()
+    later = db.scalars(
+        select(RoutineBlock)
+        .where(RoutineBlock.routine_id == routine_id, RoutineBlock.position > removed_at)
+        .order_by(RoutineBlock.position)
+    ).all()
+    for b in later:  # ascending, so each target position is already free
+        b.position -= 1
+        db.flush()
+    db.commit()
+    return HTMLResponse(_render_block_list(routine, db))
 
 
 @router.post("/routines/{routine_id}/blocks/{block_id}/move", response_model=None)
