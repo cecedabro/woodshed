@@ -19,6 +19,7 @@ from app.routes import (
     items_router,
     media_router,
     progress_router,
+    pwa_router,
     routines_router,
     run_router,
     settings_router,
@@ -162,6 +163,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(items_router)
     app.include_router(media_router)
     app.include_router(progress_router)
+    app.include_router(pwa_router)
     app.include_router(routines_router)
     app.include_router(run_router)
     app.include_router(settings_router)
