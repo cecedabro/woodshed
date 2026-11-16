@@ -203,3 +203,8 @@ don't read that file, search it with `rg` if you need something.
 - Updated `backend/app/routes/media.py`: added `GET /media/cover/{item_id}` route that looks up `Item.has_cover`, finds the cover file by `item_id.ext` in MEDIA_DIR/cover/, serves with correct `Content-Type` (`image/jpeg` or `image/png`), returns 404 when no cover or file missing.
 - Created `backend/tests/test_covers.py` (20 tests): magic byte detection (JPEG/PNG/HTML/empty), fetch with fake injectors (JPEG, PNG, HTML rejection, oversized, network error), save cover (JPEG, PNG, OSError return False), API item creation with/without release_group_id, form item creation/edit with release_group_id, cover serving (JPEG 200 + correct content-type, PNG 200, 404 when no cover, 404 for nonexistent item).
 - All 558 tests pass, 97% coverage, `make check` clean.
+
+## Home routine counts fix: separate subqueries (T86)
+- Replaced the single join query in `backend/app/main.py` (home route) with a subquery that aggregates `routine_block` counts/minutes and the last session independently, preventing the N×M inflation bug (e.g. 3 blocks × 4 sessions → 12 blocks).
+- Created `backend/tests/test_home_counts.py` (6 tests): routine with 3 blocks and 4 sessions shows "3 blocks · 20 min"; no-block routine shows "0 blocks · 0 min"; single block/1 session; blocks with no sessions; two routines with different counts coexist correctly.
+- All 565 tests pass, 97% coverage, `make check` clean.
