@@ -87,7 +87,7 @@
                     <span class="attachment-label">{{ att.label or att.original_name }}</span>
                     <span class="attachment-meta">{{ att.size_bytes }} bytes</span>
                     <div class="attachment-actions">
-                        <a href="/attachments/{{ att.id }}/download" class="btn btn-sm">Download</a>
+                        <a href="/media/attachment/{{ att.id }}" class="btn btn-sm">Download</a>
                         <form method="post" action="/items/{{ item.id }}/attachments/{{ att.id }}/_delete" style="display:inline">
                             <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                         </form>

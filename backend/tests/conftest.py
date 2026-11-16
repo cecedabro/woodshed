@@ -84,8 +84,21 @@ def app(settings: Settings) -> Iterator[FastAPI]:
     application.state.engine.dispose()
 
 
+TEST_PASSWORD = Settings().APP_PASSWORD
+
+
 @pytest.fixture()
 def client(app: FastAPI) -> Iterator[TestClient]:
+    """A logged-in client (SPEC 2.1). Use `anon_client` to test what strangers see."""
+    with TestClient(app) as c:
+        resp = c.post("/login", data={"password": TEST_PASSWORD}, follow_redirects=False)
+        assert resp.status_code == 303, "test login failed"
+        yield c
+
+
+@pytest.fixture()
+def anon_client(app: FastAPI) -> Iterator[TestClient]:
+    """A client without a session cookie."""
     with TestClient(app) as c:
         yield c
 

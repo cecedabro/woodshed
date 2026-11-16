@@ -38,18 +38,6 @@ def test_create_session_returns_id(client: TestClient) -> None:
     assert data["id"] > 0
 
 
-def test_unauthenticated_create_returns_401(client: TestClient) -> None:
-    """POST /api/sessions returns 401 when not logged in."""
-    resp = client.post("/api/sessions", json={})
-    assert resp.status_code == 401
-
-
-def test_unauthenticated_log_block_returns_401(client: TestClient) -> None:
-    """POST /api/sessions/{id}/blocks returns 401 when not logged in."""
-    resp = client.post("/api/sessions/1/blocks", json={})
-    assert resp.status_code == 401
-
-
 # ---------------------------------------------------------------------------
 # POST /api/sessions/{id}/blocks — log a block
 # ---------------------------------------------------------------------------

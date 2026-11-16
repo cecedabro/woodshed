@@ -5,12 +5,11 @@ Routes: GET /settings, POST /settings
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.auth import require_login
 from app.templating import env
 
 router = APIRouter()
@@ -39,7 +38,6 @@ def _get_theme(db: Any) -> str:
 @router.get("/settings", response_model=None)
 def get_settings(
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse:
     with request.app.state.sessionmaker() as db:
         try:
@@ -61,7 +59,6 @@ def get_settings(
 @router.post("/settings", response_model=None)
 async def post_settings(
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse | RedirectResponse:
     form = await request.form()
     raw = form.get("weekly_goal_minutes")

@@ -1,39 +1,12 @@
-"""Media and attachment download routes (SPEC 3.6, 6.2).
+"""Media route (SPEC 3.6, 6.2): GET /media/{kind}/{id} serves attachments and takes."""
 
-Routes: GET /attachments/{aid}/download,
-        GET /media/{kind}/{id}
-"""
-
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from app.auth import require_login
-from app.db import get_db
 from app.models import Attachment, Take
 
 router = APIRouter()
-
-
-@router.get("/attachments/{attachment_id}/download", response_model=None)
-def get_attachment_download(
-    attachment_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-) -> Response:
-    settings = request.app.state.settings
-    att = db.scalar(select(Attachment).where(Attachment.id == attachment_id))
-    if att is None:
-        raise HTTPException(status_code=404, detail="Attachment not found")
-    path = settings.MEDIA_DIR / "attachments" / att.stored_name
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="File not found on disk")
-    return Response(
-        content=path.read_bytes(),
-        media_type=att.content_type or "application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{att.filename}"'},
-    )
 
 
 @router.get("/media/{kind}/{media_id}", response_model=None)
@@ -41,7 +14,6 @@ def get_media(
     kind: str,
     media_id: int,
     request: Request,
-    login: None = Depends(require_login),
 ) -> Response:
     kind_map = {"attachment": "attachments", "take": "takes"}
     if kind not in kind_map:

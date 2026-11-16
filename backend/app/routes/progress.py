@@ -3,11 +3,10 @@
 Routes: GET /progress
 """
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import text
 
-from app.auth import require_login
 from app.stats import item_tempo_progress, weeks_12
 from app.templating import env, get_theme
 
@@ -17,7 +16,6 @@ router = APIRouter()
 @router.get("/progress", response_model=None)
 def get_progress(
     request: Request,
-    login: None = Depends(require_login),
 ) -> HTMLResponse:
     with request.app.state.sessionmaker() as db:
         try:

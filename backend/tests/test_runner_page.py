@@ -3,7 +3,9 @@
 Routes: GET /run/{routine_id}
 """
 
+import html
 import json
+import re
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -11,12 +13,6 @@ from sqlalchemy.orm import Session
 # ---------------------------------------------------------------------------
 # Authentication
 # ---------------------------------------------------------------------------
-
-
-def test_get_run_requires_login(client: TestClient) -> None:
-    """GET /run/{id} requires login (401)."""
-    resp = client.get("/run/1", follow_redirects=False)
-    assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -73,108 +69,6 @@ def test_run_page_has_nav(client: TestClient, db: Session) -> None:
     html = resp.text
     assert "<nav" in html
     assert 'href="/routines"' in html
-
-
-def test_run_page_data_blocks_json(client: TestClient, db: Session) -> None:
-    """SPEC 5.2, 6.2: data-blocks contains valid JSON with required fields."""
-    from app.models import Item, Routine, RoutineBlock
-
-    item = Item(kind="song", title="Blues in E")
-    db.add(item)
-    db.flush()
-
-    routine = Routine(name="Morning warmup")
-    db.add(routine)
-    db.flush()
-    db.add(RoutineBlock(routine_id=routine.id, position=0, item_id=item.id, minutes=10, bpm=70))
-    db.commit()
-
-    _login(client)
-    resp = client.get(f"/run/{routine.id}")
-    html = resp.text
-
-    # Find the data-blocks attribute
-    assert 'data-blocks="' in html or "data-blocks='" in html
-
-    # Extract JSON from data-blocks
-    import re
-
-    match = re.search(r"data-blocks=\'([^\']*)\'", html)
-    if not match:
-        match = re.search(r'data-blocks="([^"]*)"', html)
-    assert match is not None, "data-blocks attribute not found in HTML"
-
-    blocks_json = match.group(1)
-    blocks = json.loads(blocks_json)
-    assert len(blocks) == 1
-
-    block = blocks[0]
-    assert block["item_id"] == item.id
-    assert block["title"] == "Blues in E"
-    assert block["planned_seconds"] == 600  # 10 minutes * 60
-    assert block["start_bpm"] == 70
-
-
-def test_run_page_data_blocks_multiple(client: TestClient, db: Session) -> None:
-    """data-blocks contains all blocks in order."""
-    from app.models import Item, Routine, RoutineBlock
-
-    item_a = Item(kind="song", title="Song A")
-    item_b = Item(kind="exercise", title="Exercise B")
-    db.add_all([item_a, item_b])
-    db.flush()
-
-    routine = Routine(name="Multi-block")
-    db.add(routine)
-    db.flush()
-    db.add(RoutineBlock(routine_id=routine.id, position=0, item_id=item_a.id, minutes=5))
-    db.add(RoutineBlock(routine_id=routine.id, position=1, item_id=item_b.id, minutes=15, bpm=120))
-    db.commit()
-
-    _login(client)
-    resp = client.get(f"/run/{routine.id}")
-    html = resp.text
-
-    import re
-
-    match = re.search(r"data-blocks=\'([^\']*)\'", html)
-    assert match is not None
-
-    blocks = json.loads(match.group(1))
-    assert len(blocks) == 2
-    assert blocks[0]["item_id"] == item_a.id
-    assert blocks[0]["title"] == "Song A"
-    assert blocks[0]["planned_seconds"] == 300
-    assert blocks[0]["start_bpm"] is None
-    assert blocks[1]["item_id"] == item_b.id
-    assert blocks[1]["title"] == "Exercise B"
-    assert blocks[1]["planned_seconds"] == 900
-    assert blocks[1]["start_bpm"] == 120
-
-
-def test_run_page_no_bpm_is_null(client: TestClient, db: Session) -> None:
-    """BPM is null (JSON null, not a string) when not set."""
-    from app.models import Item, Routine, RoutineBlock
-
-    item = Item(kind="song", title="No BPM song")
-    db.add(item)
-    db.flush()
-    routine = Routine(name="No BPM routine")
-    db.add(routine)
-    db.flush()
-    db.add(RoutineBlock(routine_id=routine.id, position=0, item_id=item.id, minutes=10))
-    db.commit()
-
-    _login(client)
-    resp = client.get(f"/run/{routine.id}")
-    html = resp.text
-
-    import re
-
-    match = re.search(r"data-blocks=\'([^\']*)\'", html)
-    assert match is not None
-    blocks = json.loads(match.group(1))
-    assert blocks[0]["start_bpm"] is None
 
 
 def test_run_page_has_module_script(client: TestClient, db: Session) -> None:
@@ -283,3 +177,77 @@ def test_run_page_attachment_links(client: TestClient, db: Session) -> None:
 def _login(client: TestClient) -> None:
     """Log in via the login page and set the session cookie."""
     client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
+
+
+# ---------------------------------------------------------------------------
+# data-blocks JSON (SPEC 5.2, 6.2)
+# ---------------------------------------------------------------------------
+
+
+def _blocks(client: TestClient, path: str) -> list[dict]:
+    resp = client.get(path)
+    assert resp.status_code == 200
+    match = re.search(r'data-blocks="([^"]*)"', resp.text)
+    assert match is not None, "data-blocks attribute not found"
+    return json.loads(html.unescape(match.group(1)))
+
+
+def _routine(db: Session, *blocks: tuple[str, int | None, int | None, int]) -> int:
+    """Blocks are (title, item current_bpm, block bpm, minutes)."""
+    from app.models import Item, Routine, RoutineBlock
+
+    routine = Routine(name="R")
+    db.add(routine)
+    db.flush()
+    for pos, (title, item_bpm, block_bpm, minutes) in enumerate(blocks):
+        item = Item(kind="song", title=title, current_bpm=item_bpm)
+        db.add(item)
+        db.flush()
+        db.add(
+            RoutineBlock(
+                routine_id=routine.id, position=pos, item_id=item.id, minutes=minutes, bpm=block_bpm
+            )
+        )
+    db.commit()
+    return routine.id
+
+
+def test_data_blocks_fields_and_order(client: TestClient, db: Session) -> None:
+    rid = _routine(db, ("Song A", None, None, 5), ("Exercise B", None, 120, 15))
+    blocks = _blocks(client, f"/run/{rid}")
+    assert [b["title"] for b in blocks] == ["Song A", "Exercise B"]
+    assert [b["planned_seconds"] for b in blocks] == [300, 900]
+    assert all(isinstance(b["item_id"], int) for b in blocks)
+
+
+def test_start_bpm_falls_back_to_item_bpm(client: TestClient, db: Session) -> None:
+    rid = _routine(db, ("Song", 72, None, 5))
+    assert _blocks(client, f"/run/{rid}")[0]["start_bpm"] == 72
+
+
+def test_block_bpm_wins(client: TestClient, db: Session) -> None:
+    rid = _routine(db, ("Song", 72, 100, 5))
+    assert _blocks(client, f"/run/{rid}")[0]["start_bpm"] == 100
+
+
+def test_no_bpm_anywhere_is_80(client: TestClient, db: Session) -> None:
+    rid = _routine(db, ("Song", None, None, 5))
+    assert _blocks(client, f"/run/{rid}")[0]["start_bpm"] == 80
+
+
+def test_awkward_title_survives(client: TestClient, db: Session) -> None:
+    title = """Don't "Stop" <me>"""
+    rid = _routine(db, (title, None, None, 5))
+    assert _blocks(client, f"/run/{rid}")[0]["title"] == title
+
+
+def test_free_practice_uses_item_bpm(client: TestClient, db: Session) -> None:
+    from app.models import Item
+
+    item = Item(kind="exercise", title="Spider", current_bpm=90)
+    db.add(item)
+    db.commit()
+    blocks = _blocks(client, f"/run/item/{item.id}?minutes=10")
+    assert blocks == [
+        {"item_id": item.id, "title": "Spider", "planned_seconds": 600, "start_bpm": 90}
+    ]

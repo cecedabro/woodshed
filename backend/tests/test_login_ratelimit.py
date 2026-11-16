@@ -15,7 +15,7 @@ def test_11th_attempt_returns_429(client: TestClient) -> None:
     wrong = "wrong-password"
     for i in range(10):
         resp = client.post("/login", data={"password": wrong}, follow_redirects=False)
-        assert resp.status_code == 200, f"Attempt {i + 1} should return 200, got {resp.status_code}"
+        assert resp.status_code == 401, f"Attempt {i + 1} should return 401, got {resp.status_code}"
 
     # 11th attempt: should be 429
     resp = client.post("/login", data={"password": wrong}, follow_redirects=False)
