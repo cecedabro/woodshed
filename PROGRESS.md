@@ -384,3 +384,11 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - Key fix: `item_forms.py` route handlers are async; wrapper routes in `items.py` must be async and `await` them. FastAPI route ordering matters — `/items/new` must be registered before `/items/{item_id}` to avoid `{item_id}` catching "new" first.
 - `/attachments/{id}/download` is public (no login); `/media/{kind}/{id}` requires `require_login`. Both were correctly separated in `media.py`.
 - `make check` passes (358 tests, 99% coverage, ruff, mypy, jscheck, bandit, migration checks).
+
+## T57 — Routine block move endpoint (SPEC 4.2)
+- `backend/app/routes/routines.py`: added `post_move_block` route at `POST /routines/{id}/blocks/{block_id}/move` — reads `direction` from query param, performs a no-op for boundary moves (first block up, last block down), and swaps positions via a temp-position workaround to preserve the `(routine_id, position)` unique constraint. Returns HTMX fragment via `_render_block_list`.
+- `backend/app/templates/_routine_blocks.html`: new partial rendering block rows with ▲/▼ move buttons using `ui.button()` macros; direction sent via query param in form action URL (no hidden inputs needed).
+- `backend/app/templates/routines_edit.html`: renders the block list partial inside `#routine-blocks`.
+- `backend/tests/test_routine_move.py`: 11 tests — auth guard, bad direction (422), routine/block not found (404), move down (A down twice = B,C,A), move up (A,C,B → C up = C,A,B), boundary no-ops, single-block noop, two-block swap, and consecutive positions after move.
+- Gotcha: Raw SQL in `_create_routine_with_blocks` bypasses SQLAlchemy defaults; `status='learning'` and `notes=''` must be included in `INSERT INTO item`.
+- Gotcha: `_routine_blocks.html` must `{% import "_ui.html" as ui %}` to use `ui.button()` and pass the design-system UI rule check.
