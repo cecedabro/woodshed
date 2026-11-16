@@ -56,20 +56,17 @@ export function createRunner(blocks, deps) {
     const block = blocks[currentIndex];
     const played = currentTimer.played(deps.now());
     if (!sessionId) return;
-    deps.api.logBlock(sessionId, {
+    // SPEC 6.3: with the metronome off the logged BPM is null (deps decides).
+    const bpm = deps.bpmToLog ? deps.bpmToLog(currentBpm) : currentBpm;
+    const entry = {
       item_id: block.item_id,
       position: currentIndex,
       planned_seconds: block.planned_seconds,
       played_seconds: Math.round(played),
-      bpm: currentBpm,
-    });
-    loggedBlocks.push({
-      item_id: block.item_id,
-      position: currentIndex,
-      planned_seconds: block.planned_seconds,
-      played_seconds: Math.round(played),
-      bpm: currentBpm,
-    });
+      bpm: bpm,
+    };
+    deps.api.logBlock(sessionId, entry);
+    loggedBlocks.push(entry);
   }
 
   function pause() {
@@ -93,6 +90,12 @@ export function createRunner(blocks, deps) {
     currentIndex++;
     if (currentIndex < blocks.length) {
       _setupTimer();
+    } else {
+      // Skipping the last block ends the session, like its countdown reaching 0.
+      done = true;
+      if (sessionId) {
+        deps.api.finish(sessionId);
+      }
     }
   }
 
@@ -106,10 +109,15 @@ export function createRunner(blocks, deps) {
     currentBpm = bpm;
   }
 
+  // Finish early (SPEC 5.2 "finish session"): log the block in progress, then finish.
   function finish() {
-    if (sessionId && !done) {
+    if (done) return;
+    if (currentIndex >= 0 && currentIndex < blocks.length && currentTimer) {
+      _logCurrentBlock();
+    }
+    done = true;
+    if (sessionId) {
       deps.api.finish(sessionId);
-      done = true;
     }
   }
 
