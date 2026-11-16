@@ -83,3 +83,16 @@ don't read that file, search it with `rg` if you need something.
   `ui.section()` wrapping a `ui.group()` of `ui.row(r.name, sub=r.block_count ~ " blocks · " ~ r.total_minutes ~ " min", href=...)`,
   and `ui.empty(...)` for the empty state. Removed from `ui_legacy.txt`.
 - All 425 tests pass, 99% coverage, `make check` clean.
+
+## Routine forms migration: new + delete pages (T82)
+- Migrated `routines_new.html` per "New routine" recipe: extends `base.html`, `{% import "_ui.html" as ui %}`,
+  `nav_left` back button to "/routines", `.stack-lg` wrapper, `<h2>New Routine</h2>`, form with
+  `ui.group()` containing `ui.field("name", "Name", required=True, placeholder=...)` and error support,
+  `.actions.actions-end` with `ui.button("Create", kind="primary", type="submit")`.
+- Migrated `routines_delete.html` per "Delete confirmations" recipe: extends `base.html`,
+  `nav_left` back to routine edit page, `ui.group(pad=True)` with the question `<p>` and
+  `<p class="delete-note">`, `.actions.actions-end` with `ui.button("Delete", kind="danger", type="submit")`,
+  ghost "Cancel" link to edit page.
+- Removed both templates from `backend/tests/ui_legacy.txt`.
+- No test assertion updates needed (existing assertions matched new markup).
+- All 431 tests pass, 98.57% coverage, `make check` clean.
