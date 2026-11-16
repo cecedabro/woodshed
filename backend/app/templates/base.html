@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{% block title %}Woodshed{% endblock %} · Woodshed</title>
+    <title>{% block title %}Woodshed{% endblock %}{% if self.title() | trim != "Woodshed" %} · Woodshed{% endif %}</title>
     <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/components.css">
     <link rel="stylesheet" href="/static/css/pages.css">
@@ -25,7 +25,7 @@
             ("home", "/", "Home", "home"),
             ("library", "/library", "Library", "library"),
             ("routines", "/routines", "Routines", "routines"),
-            ("tuner", "/tuner", "Tuner", "tuner"),
+            ("tuner", "/tuner", "Tools", "tuner"),
             ("progress", "/progress", "Progress", "progress"),
         ] %}
         {%- for key, href, label, icon_name in tabs %}
