@@ -21,7 +21,9 @@ Principles (they decide close calls):
 - One tap from opening the app to playing.
 - Logging comes from the timer. The user never types in practice time.
 - Progress is weekly totals. **No daily streaks**, anywhere.
-- No scraping or downloading of tabs/audio; the user uploads his own files.
+- Woodshed requests, shows and plays media; it does not acquire it. Recordings, tabs and
+  audio come from the user's uploads or from other services through their API. Woodshed
+  does not know or care where those get their files.
 
 ## Repository layout
 | Path | What | Doc |
