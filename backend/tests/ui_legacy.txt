@@ -2,7 +2,6 @@
 # A migration task removes its lines. Never add lines.
 404.html
 items_delete.html
-items_detail.html
 items_edit.html
 items_new.html
 login.html

@@ -36,3 +36,14 @@ don't read that file, search it with `rg` if you need something.
 - Footer text uses "Weekly minutes only." (avoiding "streak" which a behavioural test
   asserts must not appear on the home page).
 - All 408 tests pass, 99% coverage, `make check` clean.
+
+## Item detail page migration, 2026-11-16 (T72)
+- Rewrote `backend/app/templates/items_detail.html` to extend `base.html` and use `ui.*` macros:
+  `.stack-lg` layout with `.spread` header (h2 + badges + practising button), `.split` for
+  details/notes and files/tempo, `ui.section()`/`ui.group()`/`ui.row()`/`ui.empty()`.
+- Changed heading from `<h1>` to `<h2>` (navbar title block provides the only `<h1>`).
+- Updated `backend/app/routes/items.py`: added `has_cover=False` to template context.
+- Updated `backend/tests/test_item_page.py`: notes regex from `<dd>` to `<p>`, original_url
+  link regex from `<a\s+href=...>` to `<a[^>]*href=...>` to match row macro output.
+- Removed `items_detail.html` from `backend/tests/ui_legacy.txt`.
+- All 411 tests pass, 99% coverage, `make check` clean.

@@ -64,7 +64,7 @@ def test_original_url_has_target_and_rel(client: TestClient, item: Item) -> None
     """External links must use target='_blank' and rel='noopener'."""
     html = _html(client, item.id)
     # Find the <a> tag with the original_url
-    pattern = rf'<a\s+href="{re.escape(item.original_url)}"[^>]*>'
+    pattern = rf'<a[^>]*href="{re.escape(item.original_url)}"[^>]*>'
     match = re.search(pattern, html)
     assert match, f"No <a> tag found with href={item.original_url}"
     tag_text = match.group(0)
@@ -85,10 +85,10 @@ def test_item_page_has_edit_link(client: TestClient, item: Item) -> None:
 def test_notes_preserve_newlines_as_br(client: TestClient, item: Item) -> None:
     """Newlines in notes become <br> tags (2 newlines = 2 <br>s)."""
     html = _html(client, item.id)
-    # Find the notes dd element
-    notes_pattern = r'<dd[^>]*class="notes"[^>]*>(.*?)</dd>'
+    # Find the notes element
+    notes_pattern = r'<p[^>]*class="notes"[^>]*>(.*?)</p>'
     match = re.search(notes_pattern, html, re.DOTALL)
-    assert match, "No <dd class='notes'> element found"
+    assert match, "No <p class='notes'> element found"
     notes_content = match.group(1)
     br_count = notes_content.count("<br>")
     # "G key - 12 bar\nIntro: G D C\n<script>bad</script>" has 2 newlines
@@ -98,9 +98,9 @@ def test_notes_preserve_newlines_as_br(client: TestClient, item: Item) -> None:
 def test_notes_html_is_escaped(client: TestClient, item: Item) -> None:
     """HTML in notes must be escaped (script tags should not execute)."""
     html = _html(client, item.id)
-    notes_pattern = r'<dd[^>]*class="notes"[^>]*>(.*?)</dd>'
+    notes_pattern = r'<p[^>]*class="notes"[^>]*>(.*?)</p>'
     match = re.search(notes_pattern, html, re.DOTALL)
-    assert match, "No <dd class='notes'> element found"
+    assert match, "No <p class='notes'> element found"
     notes_content = match.group(1)
     # The escaped version should contain &lt;script&gt;
     assert "&lt;script&gt;" in notes_content

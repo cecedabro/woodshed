@@ -76,6 +76,7 @@ def get_item_page(request: Request, item_id: int) -> HTMLResponse | RedirectResp
             active="items",
             edit_link=edit_url,
             tempo_history=tempo,
+            has_cover=False,
             theme=get_theme(request.app),
         )
     )

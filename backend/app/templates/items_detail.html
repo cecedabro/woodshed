@@ -1,120 +1,94 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
 {% from "macros.html" import render_tempo_svg %}
+{% extends "base.html" %}
 
 {% block title %}Woodshed — {{ item.title }}{% endblock %}
+{% block nav_right %}{{ ui.nav_link("Edit", "/items/" ~ item.id ~ "/edit") }}{% endblock %}
 
 {% block content %}
-<div class="item-detail">
-    <div class="item-header">
-        <h1>{{ item.title }}</h1>
-        {% if edit_link %}
-        <a href="{{ edit_link }}" class="edit-link">Edit</a>
-        {% endif %}
-        <a href="/run/item/{{ item.id }}?minutes=10" class="btn">Practise this</a>
+<div class="stack-lg">
+  {# Spread: title area with kind/status badges and practising link #}
+  <div class="spread">
+    <h2>{{ item.title }}</h2>
+    <div class="cluster">
+      {{ ui.badge(item.kind|capitalize) }}
+      {{ ui.badge(item.status|capitalize, accent=True) }}
+      {{ ui.link_button("Practise this", "/run/item/" ~ item.id ~ "?minutes=10", kind="primary") }}
     </div>
+  </div>
 
-    <dl class="item-fields">
-        <div class="field-row">
-            <dt>Kind</dt>
-            <dd>{{ item.kind|capitalize }}</dd>
-        </div>
-
-        {% if item.artist %}
-        <div class="field-row">
-            <dt>Artist</dt>
-            <dd>{{ item.artist }}</dd>
-        </div>
-        {% endif %}
-
-        <div class="field-row">
-            <dt>Status</dt>
-            <dd>{{ item.status|capitalize }}</dd>
-        </div>
-
-        {% if item.current_bpm %}
-        <div class="field-row">
-            <dt>Current BPM</dt>
-            <dd>{{ item.current_bpm }}</dd>
-        </div>
-        {% endif %}
-
-        {% if item.original_url %}
-        <div class="field-row">
-            <dt>Original</dt>
-            <dd><a href="{{ item.original_url }}" target="_blank" rel="noopener">{{ item.original_url }}</a></dd>
-        </div>
-        {% endif %}
-
-        {% if item.notes %}
-        <div class="field-row">
-            <dt>Notes</dt>
-            <dd class="notes" id="notes">{{ item.notes|notes_br|safe }}</dd>
-        </div>
-        {% endif %}
-
-        <div class="field-row">
-            <dt>Created</dt>
-            <dd>{{ item.created_at|local_time }}</dd>
-        </div>
-
-        <div class="field-row">
-            <dt>Updated</dt>
-            <dd>{{ item.updated_at|local_time }}</dd>
-        </div>
-    </dl>
-
-    {% if tempo_history %}
-    <div class="tempo-section">
-        <h2>Tempo History</h2>
-        <p class="tempo-text">
-            {{ tempo_history|map(attribute=1)|join(' → ') }}
-        </p>
-        {{ render_tempo_svg(tempo_history)|safe }}
+  {# Details and Notes split #}
+  <div class="split">
+    <div>
+      {% call ui.section("Details") %}
+        {% call ui.group() %}
+          {{ ui.row("Kind", value=item.kind|capitalize) }}
+          {{ ui.row("Artist", value=item.artist) }}
+          {{ ui.row("Status", value=item.status|capitalize) }}
+          {% if item.current_bpm %}
+            {{ ui.row("Current BPM", value=item.current_bpm) }}
+          {% endif %}
+          {% if item.original_url %}
+            {{ ui.row("Original", href=item.original_url, attrs={"target":"_blank", "rel":"noopener"}) }}
+          {% endif %}
+          {{ ui.row("Added", value=item.created_at|local_time) }}
+          {{ ui.row("Updated", value=item.updated_at|local_time) }}
+        {% endcall %}
+      {% endcall %}
     </div>
-    {% endif %}
+    <div>
+      {% call ui.section("Notes") %}
+        {% call ui.group(pad=True) %}
+          <p class="notes">{{ item.notes|notes_br|safe }}</p>
+        {% endcall %}
+      {% endcall %}
+    </div>
+  </div>
 
-    {% if item.attachments %}
-    <div class="attachments-section">
-        <h2>Attachments</h2>
-
-        {% for kind in ["tab", "pdf", "audio"] %}
+  {# Files and Tempo split #}
+  <div class="split">
+    <div>
+      {% call ui.section("Files") %}
+        {% if item.attachments %}
+          {% for kind in ["tab", "pdf", "audio"] %}
             {% set group = item.attachments|selectattr("kind", "equalto", kind)|list %}
             {% if group %}
-            <h3>{{ kind|capitalize }}</h3>
-            <ul class="attachment-list">
-            {% for att in group %}
-                <li class="attachment-item">
-                    <span class="attachment-label">{{ att.label or att.original_name }}</span>
-                    <span class="attachment-meta">{{ att.size_bytes }} bytes</span>
-                    <div class="attachment-actions">
-                        <a href="/media/attachment/{{ att.id }}" class="btn btn-sm">Download</a>
-                        <form method="post" action="/items/{{ item.id }}/attachments/{{ att.id }}/_delete" style="display:inline">
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                        </form>
-                    </div>
-                </li>
-            {% endfor %}
-            </ul>
+              {% call ui.group() %}
+                <h3>{{ kind|capitalize }}</h3>
+                {% for att in group %}
+                  {{ ui.row(att.label or att.original_name, value=att.size_bytes ~ " bytes",
+                            href="/media/attachment/" ~ att.id) }}
+                {% endfor %}
+              {% endcall %}
             {% endif %}
-        {% endfor %}
+          {% endfor %}
+        {% else %}
+          {{ ui.empty("No files uploaded", "Add tabs, PDFs, or backing tracks.", "", "", icon_name="files") }}
+        {% endif %}
+      {% endcall %}
     </div>
-    {% endif %}
+    <div>
+      {% call ui.section("Tempo") %}
+        {% if tempo_history %}
+          {% call ui.group(pad=True) %}
+            <p class="tempo-text">{{ tempo_history|map(attribute=1)|join(' → ') }}</p>
+            {{ render_tempo_svg(tempo_history)|safe }}
+          {% endcall %}
+        {% else %}
+          {{ ui.empty("No tempo data yet", "Tempo history appears after practising this item.", "", "", icon_name="tempo") }}
+        {% endif %}
+      {% endcall %}
+    </div>
+  </div>
 
-    <div class="attachments-section">
-        <h3>Add attachment</h3>
-        <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data" class="upload-form">
-            <div class="field-row">
-                <label for="attach-file">File</label>
-                <input type="file" id="attach-file" name="file" required accept=".tab,.gtp,.htm,.html,.pdf,.mp3,.wav,.ogg,.m4a,.flac">
-            </div>
-            <div class="field-row">
-                <label for="attach-label">Label (optional)</label>
-                <input type="text" id="attach-label" name="label" placeholder="e.g. Slow version, Cover tab" maxlength="200">
-            </div>
-            <div class="field-row">
-                <button type="submit" class="btn">Upload</button>
-            </div>
-        </form>
-    </div>
+  {# Takes (future) #}
+  {% call ui.section("Takes") %}
+    {{ ui.empty("No takes recorded yet", "Start practising to record your first take.", "", "", icon_name="takes") }}
+  {% endcall %}
+
+  {# Last row: Delete #}
+  {% call ui.group() %}
+    {{ ui.row("Delete this item…", href="/items/" ~ item.id ~ "/delete", tone="danger") }}
+  {% endcall %}
 </div>
 {% endblock %}
