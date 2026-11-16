@@ -225,7 +225,7 @@ def test_progress_page_contains_tempo_section(client: TestClient, db: Session) -
     item = _item(db, title="Tempo item")
     _session(db, item, bpm=80, started_at=datetime.now(UTC) - timedelta(days=5))
     html = _progress_html(client)
-    assert "Tempo progress" in html
+    assert "Tempo, last 90 days" in html
     assert "Tempo item" in html
 
 
@@ -241,21 +241,21 @@ def test_progress_page_shows_bpm_values(client: TestClient, db: Session) -> None
 
 
 def test_progress_page_delta_up_class(client: TestClient, db: Session) -> None:
-    """Positive diff gets the delta-up class."""
+    """Positive diff shows with a + prefix in the row value."""
     item = _item(db, title="Get faster")
     _session(db, item, bpm=80, started_at=datetime.now(UTC) - timedelta(days=10))
     _session(db, item, bpm=100, started_at=datetime.now(UTC) - timedelta(days=2))
     html = _progress_html(client)
-    assert 'class="delta delta-up"' in html
+    assert "+20 bpm" in html
 
 
 def test_progress_page_delta_down_class(client: TestClient, db: Session) -> None:
-    """Negative diff gets the delta-down class."""
+    """Negative diff shows the negative number in the row value."""
     item = _item(db, title="Slow down")
     _session(db, item, bpm=120, started_at=datetime.now(UTC) - timedelta(days=10))
     _session(db, item, bpm=90, started_at=datetime.now(UTC) - timedelta(days=2))
     html = _progress_html(client)
-    assert 'class="delta delta-down"' in html
+    assert "-30 bpm" in html
 
 
 def test_progress_page_no_tempo_section_when_empty(client: TestClient, db: Session) -> None:
@@ -263,7 +263,7 @@ def test_progress_page_no_tempo_section_when_empty(client: TestClient, db: Sessi
     no_bpm_item = _item(db, title="No BPM item")
     _session(db, no_bpm_item, bpm=None, started_at=datetime.now(UTC) - timedelta(days=5))
     html = _progress_html(client)
-    assert "Tempo progress" not in html
+    assert "Tempo, last 90 days" not in html
 
 
 def test_progress_page_item_links_to_detail(client: TestClient, db: Session) -> None:
@@ -275,10 +275,8 @@ def test_progress_page_item_links_to_detail(client: TestClient, db: Session) -> 
 
 
 def test_progress_page_table_headers(client: TestClient, db: Session) -> None:
-    """The tempo table has the expected column headers."""
+    """The tempo section shows the expected header."""
     item = _item(db, title="Header test")
     _session(db, item, bpm=80, started_at=datetime.now(UTC) - timedelta(days=5))
     html = _progress_html(client)
-    assert "First BPM" in html
-    assert "Latest BPM" in html
-    assert "Change" in html
+    assert "Tempo, last 90 days" in html

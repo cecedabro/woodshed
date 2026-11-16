@@ -3,6 +3,5 @@
 404.html
 login.html
 macros.html
-progress.html
 settings.html
 legacy_base.html
