@@ -141,7 +141,7 @@ On `/items/new` the "Find the song" section comes first.
 
 **Find the song (top of `/items/new`)**
 ```jinja
-{% call ui.section("Find the song", footer="Song details from MusicBrainz. Nothing else is downloaded.") %}
+{% call ui.section("Find the song", footer="Song details from MusicBrainz.") %}
 <form method="get" action="/items/lookup" hx-get="/items/lookup" hx-target="#mb-results"
       hx-trigger="submit, keyup changed delay:500ms from:#f-mb-title, keyup changed delay:500ms from:#f-mb-artist">
   {% call ui.group() %}{{ ui.field("title", "Title", attrs={"id": "f-mb-title"}) }}{{ ui.field("artist", "Artist (optional)", attrs={"id": "f-mb-artist"}) }}{% endcall %}
