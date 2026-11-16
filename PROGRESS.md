@@ -252,3 +252,11 @@ don't read that file, search it with `rg` if you need something.
 - Fixed exception chaining (`TooLarge as e` → `raise ... from e`) per bandit B904.
 - Removed unused imports (`BaseModel`, `select`, `Settings`, `Item`).
 - All 621 tests pass, 96% coverage, `make check` clean.
+
+## T92: Recorder integration into runner and item detail pages
+- Added `[data-elapsed]` timer display in `run.html` (below the record button) and `items_detail.html` (in the Takes section, wrapped in `[data-recorder]`).
+- Updated `run-page.js`: imported `createRecorder`, added `el.timer` and `el.record` references, tracked `sessionId` from API, initialized `recorder` with the session block ID, and stopped the recorder in the `stop()` function when the session ends.
+- Created `items_detail-page.js`: initializes the recorder for the item detail page with no BPM/sessionBlockId (free practice takes).
+- Added `.runner-take-timer` CSS rule in `pages.css` for the elapsed timer display.
+- Fixed `recorder.test.js`: rewrote all `createRecorder` tests to be async-aware of the `getUserMedia` promise flow, replaced direct `navigator` replacement with `navigator.mediaDevices.getUserMedia` property definition.
+- `make check` clean: 621 tests pass, 97% coverage.

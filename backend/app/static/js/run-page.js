@@ -2,6 +2,7 @@
 // Decisions about what to show live in runner-view.js (pure, tested); this file only applies them.
 
 import { createRunner } from "./runner.js";
+import { createRecorder } from "./recorder.js";
 import { clampBpm, Metronome, tapTempo } from "./metronome.js";
 import { beatIndex, formatTime, linksHidden, runnerView } from "./runner-view.js";
 
@@ -57,6 +58,8 @@ function queued(fn) {
   return next;
 }
 
+let sessionId = null;
+
 async function postJson(url, body) {
   const res = await fetch(url, {
     method: "POST",
@@ -69,7 +72,11 @@ async function postJson(url, body) {
 
 const api = {
   startSession: () =>
-    queued(async () => (await postJson("/api/sessions", { routine_id: routineId })).id),
+    queued(async () => {
+      const result = await postJson("/api/sessions", { routine_id: routineId });
+      sessionId = result.id;
+      return result.id;
+    }),
   logBlock: (sid, data) => queued(() => postJson(`/api/sessions/${sid}/blocks`, data)),
   finish: (sid) =>
     queued(() => postJson(`/api/sessions/${sid}/finish`)).then(showSummary, () => showSummary(null)),
@@ -102,6 +109,8 @@ const el = {
   metronome: $("#run-metronome"),
   volume: $("#run-volume"),
   summary: $("#run-summary"),
+  record: $("#run-record"),
+  timer: $("#run-timer"),
   icons: [...($("#run-icons")?.content.children || [])], // [play, pause]
 };
 
@@ -125,6 +134,27 @@ const runner = createRunner(blocks, {
   now: () => Date.now(),
   cue: () => metronome?.playCue(),
   bpmToLog: (b) => (metronomeOn ? b : null),
+});
+
+// --- Recorder (SPEC 8.1) ---
+
+const recorder = createRecorder({
+  element: runnerEl,
+  itemId: blocks[0]?.item_id ?? 0,
+  bpm: () => bpm,
+  sessionBlockId: () => sessionId,
+  onStart: () => {
+    if (el.timer) el.timer.hidden = false;
+  },
+  onStop: () => {
+    if (el.timer) el.timer.hidden = true;
+  },
+  onUpload: () => {
+    if (el.timer) el.timer.hidden = true;
+  },
+  onRecordingError: (msg) => {
+    alert(msg);
+  },
 });
 
 // --- Rendering ---
@@ -240,6 +270,7 @@ function stop() {
   tickTimer = null;
   syncMetronome();
   releaseWakeLock();
+  recorder?.stop();
 }
 
 function showSummary(summary) {

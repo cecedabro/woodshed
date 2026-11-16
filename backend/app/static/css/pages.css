@@ -5,3 +5,11 @@
 .remove-form {
   display: inline;
 }
+
+.runner-take-timer {
+  font-size: var(--fs-caption);
+  color: var(--c-dim);
+  text-align: center;
+  margin-top: var(--s-2);
+}
+
