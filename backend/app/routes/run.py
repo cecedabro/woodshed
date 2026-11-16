@@ -3,6 +3,9 @@
 Routes: GET /run/item/{item_id}, GET /run/{routine_id}
 """
 
+import json
+from typing import Any
+
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
@@ -12,6 +15,21 @@ from app.models import Item, Routine, RoutineBlock
 from app.templating import env, get_theme
 
 router = APIRouter()
+
+DEFAULT_BPM = 80
+
+
+def runner_blocks(blocks: Any) -> list[dict[str, Any]]:
+    """The runner's block list (SPEC 6.2): start BPM is the block's, else the item's, else 80."""
+    return [
+        {
+            "item_id": b.item_id,
+            "title": b.item.title,
+            "planned_seconds": b.minutes * 60,
+            "start_bpm": b.bpm or b.item.current_bpm or DEFAULT_BPM,
+        }
+        for b in blocks
+    ]
 
 
 @router.get("/run/item/{item_id}", response_model=None)
@@ -46,6 +64,7 @@ def get_run_item(
             active="run",
             routine=None,
             blocks=blocks,
+            blocks_json=json.dumps(runner_blocks(blocks)),
             theme=get_theme(request.app),
         )
     )
@@ -79,6 +98,7 @@ def get_run_routine(
             active="run",
             routine=routine,
             blocks=blocks,
+            blocks_json=json.dumps(runner_blocks(blocks)),
             theme=get_theme(request.app),
         )
     )

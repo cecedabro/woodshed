@@ -131,4 +131,19 @@ describe('createRunner', () => {
     assert.strictEqual(state.remaining, 30);
     assert.strictEqual(state.index, 0);
   });
+
+  it('uses start_bpm for the first block and logs it', async () => {
+    const blocks = [{ title: 'Song', planned_seconds: 10, item_id: 1, start_bpm: 72 }];
+    let nowVal = 1_000_000;
+    const { api, getLoggedBlocks } = makeDeps();
+    const deps2 = { api, now: () => nowVal, cue: () => {} };
+    const run = (await import('../../app/static/js/runner.js')).createRunner(blocks, deps2);
+    run.start();
+    await new Promise((r) => setTimeout(r, 0)); // startSession resolves
+    assert.strictEqual(run.current().bpm, 72);
+    nowVal += 10_000;
+    run.tick();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.strictEqual(getLoggedBlocks()[0].bpm, 72);
+  });
 });

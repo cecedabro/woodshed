@@ -3,6 +3,7 @@
 Routes: GET /run/item/{item_id}?minutes=10
 """
 
+import html as html_mod
 import json
 import re
 
@@ -66,17 +67,17 @@ def test_run_item_data_blocks_json(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/item/{item.id}")
     html = resp.text
 
-    match = re.search(r"data-blocks=\'([^\']*)\'", html)
+    match = re.search(r'data-blocks="([^"]*)"', html)
     assert match is not None, "data-blocks attribute not found in HTML"
 
-    blocks = json.loads(match.group(1))
+    blocks = json.loads(html_mod.unescape(match.group(1)))
     assert len(blocks) == 1
 
     block = blocks[0]
     assert block["item_id"] == item.id
     assert block["title"] == "Free Practice Song"
     assert block["planned_seconds"] == 600  # default 10 minutes * 60
-    assert block["start_bpm"] is None
+    assert block["start_bpm"] == 80  # no BPM anywhere (SPEC 6.2)
 
 
 def test_run_item_routine_id_null(client: TestClient, db: Session) -> None:
@@ -108,10 +109,10 @@ def test_run_item_custom_minutes(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/item/{item.id}?minutes=15")
     html = resp.text
 
-    match = re.search(r"data-blocks=\'([^\']*)\'", html)
+    match = re.search(r'data-blocks="([^"]*)"', html)
     assert match is not None
 
-    blocks = json.loads(match.group(1))
+    blocks = json.loads(html_mod.unescape(match.group(1)))
     assert blocks[0]["planned_seconds"] == 900  # 15 * 60
 
 

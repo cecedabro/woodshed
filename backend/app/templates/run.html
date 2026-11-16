@@ -3,16 +3,7 @@
 {% block title %}Woodshed — Running {{ routine.name if routine else "Free Practice" }}{% endblock %}
 
 {% block content %}
-<div class="runner" data-blocks='[
-    {% for b in blocks %}
-    {
-        "item_id": {{ b.item_id }},
-        "title": {{ b.item.title | tojson }},
-        "planned_seconds": {{ b.minutes * 60 }},
-        "start_bpm": {{ b.bpm if b.bpm is not none else "null" }}
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-]' data-routine-id="{{ routine.id if routine else 'null' }}">
+<div class="runner" data-blocks="{{ blocks_json }}" data-routine-id="{{ routine.id if routine else 'null' }}">
 
 <h1>{{ routine.name if routine else blocks[0].item.title }}</h1>
 

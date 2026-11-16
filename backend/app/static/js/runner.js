@@ -27,7 +27,7 @@ export function createRunner(blocks, deps) {
     const block = blocks[currentIndex];
     currentTimer = createTimer(block.planned_seconds);
     currentTimer.start(deps.now());
-    currentBpm = block.bpm || 80;
+    currentBpm = block.start_bpm ?? block.bpm ?? 80;
   }
 
   function tick() {
