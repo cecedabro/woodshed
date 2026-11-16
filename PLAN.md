@@ -186,13 +186,13 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && uv run pytest tests/test_sw.py -q && node --check app/static/sw.js
 - [ ] T41: Accessibility pass (SPEC 10.2): `tests/test_a11y.py` parses every page (logged in, with seed rows) with `html.parser` and checks: one `<h1>`, every input/select/textarea has a label, every button has text or `aria-label`, `<html lang="en">`, no inline `<script>` code or `on*=` attributes. Fix what fails.
   accept: cd backend && uv run pytest tests/test_a11y.py -q
-- [ ] T43: `backend/scripts/next_version.py` (stdlib only, SPEC 11.3): from tag names and the commit message print the next version. Write `tests/test_next_version.py` (no tags → v0.1.0; ignores non-`vX.Y.Z` tags; `[minor]` resets patch; `[major]` resets both).
+- [x] T43: `backend/scripts/next_version.py` (stdlib only, SPEC 11.3): from tag names and the commit message print the next version. Write `tests/test_next_version.py` (no tags → v0.1.0; ignores non-`vX.Y.Z` tags; `[minor]` resets patch; `[major]` resets both).
   accept: cd backend && uv run pytest tests/test_next_version.py -q
-- [ ] T44: `.github/workflows/release.yml` per docs/deployment.md (on push to main; `permissions: contents: write, packages: write`; concurrency `release` without cancel; jobs `uses:` ci.yml, migrations.yml and image.yml, then build-and-push with pinned docker actions and the tag; skip on `[skip release]`).
+- [x] T44: `.github/workflows/release.yml` per docs/deployment.md (on push to main; `permissions: contents: write, packages: write`; concurrency `release` without cancel; jobs `uses:` ci.yml, migrations.yml and image.yml, then build-and-push with pinned docker actions and the tag; skip on `[skip release]`).
   accept: uvx --from actionlint-py actionlint .github/workflows/release.yml
-- [ ] T45: `deploy/` part 1 per docs/deployment.md: `Makefile` (validate), `kustomization.yaml`, `namespace.yaml`, `app.yaml` (Deployment with both initContainers, probes, security context, resources, `/tmp` emptyDir, media PVC mount at `/data`, image marker; Service; PVC `woodshed-media`).
+- [x] T45: `deploy/` part 1 per docs/deployment.md: `Makefile` (validate), `kustomization.yaml`, `namespace.yaml`, `app.yaml` (Deployment with both initContainers, probes, security context, resources, `/tmp` emptyDir, media PVC mount at `/data`, image marker; Service; PVC `woodshed-media`).
   accept: make -C deploy validate
-- [ ] T46: `deploy/` part 2: `postgres.yaml` (StatefulSet + Service per the table), `ingress.yaml`, and `secret.example.yaml` with `REPLACE_ME` values (not in the kustomization).
+- [x] T46: `deploy/` part 2: `postgres.yaml` (StatefulSet + Service per the table), `ingress.yaml`, and `secret.example.yaml` with `REPLACE_ME` values (not in the kustomization).
   accept: make -C deploy validate && grep -q REPLACE_ME deploy/secret.example.yaml
 - [ ] T47: README "Using it" and "Deploying" sections: every page in one line, `make dev`, how a merge becomes a release, env vars and secrets. Short; do not change other sections.
   accept: grep -q "## Deploying" README.md && grep -q "make dev" README.md
