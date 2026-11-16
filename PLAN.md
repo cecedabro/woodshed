@@ -180,7 +180,7 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && uv run pytest tests/test_compare.py -q
 
 ## Round 4: home-screen app, polish, release, deploy
-- [ ] T39: Icons and manifest (SPEC 10.3, docs/frontend.md §pwa): `backend/scripts/make_icons.py` (stdlib PNG writer) and the generated `static/icons/icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180); `GET /manifest.webmanifest`. The head tags are already in `base.html` (do not edit it). Write `tests/test_manifest.py` (JSON fields, content type, PNG sizes read from the IHDR chunk).
+- [x] T39: Icons and manifest (SPEC 10.3, docs/frontend.md §pwa): `backend/scripts/make_icons.py` (stdlib PNG writer) and the generated `static/icons/icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180); `GET /manifest.webmanifest`. The head tags are already in `base.html` (do not edit it). Write `tests/test_manifest.py` (JSON fields, content type, PNG sizes read from the IHDR chunk). — done by hand 2026-11-16 (icon design: shed + guitar, amp theme)
   accept: cd backend && uv run pytest tests/test_manifest.py -q
 - [ ] T40: `GET /sw.js` (SPEC 10.3): served from the root with a JS content type and `Service-Worker-Allowed: /`; caches only `/static/` (cache-first), everything else goes to the network; registered from `static/js/app.js`. Write `tests/test_sw.py`.
   accept: cd backend && uv run pytest tests/test_sw.py -q && node --check app/static/sw.js
