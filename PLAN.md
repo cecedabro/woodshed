@@ -154,7 +154,7 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && node --test tests/js/pitch.test.js
 - [x] T71: Tuner page (SPEC 13.1, 13.4): `GET /tuner` (`active="tuner"`) per the recipe with `static/js/tuner.js` (glue per docs/frontend.md); `data-a4` from setting `tuner_a4` (default 440); six string buttons with `data-freq`. Write `tests/test_tuner_page.py` (200 logged in; `aria-current="page"` on the Tuner tab; module script `tuner.js`; six buttons with the right `data-freq` values; `data-a4="440"`).
   accept: cd backend && uv run pytest tests/test_tuner_page.py tests/test_ui_rules.py -q && node --check app/static/js/tuner.js
-- [ ] T72: Tuner reference in Settings (SPEC 13.3): field `tuner_a4` (430–450, else 422 and nothing saved) on `/settings`; `/tuner` uses it. Add to `tests/test_settings.py`.
+- [x] T72: Tuner reference in Settings (SPEC 13.3): field `tuner_a4` (430–450, else 422 and nothing saved) on `/settings`; `/tuner` uses it. Add to `tests/test_settings.py`.
   accept: cd backend && uv run pytest tests/test_settings.py tests/test_tuner_page.py -q
 
 ## Round 8: songs from MusicBrainz (SPEC 14, docs/backend.md §musicbrainz)

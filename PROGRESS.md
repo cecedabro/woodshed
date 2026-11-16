@@ -151,3 +151,8 @@ don't read that file, search it with `rg` if you need something.
 - Wired router in `backend/app/routes/__init__.py` (imported `tuner_router`) and `backend/app/main.py` (mounted `app.include_router(tuner_router)`).
 - Created `backend/tests/test_tuner_page.py` (10 tests: 200 status, `aria-current="page"`, module script, six `data-freq` values, `data-a4="440"`, note/hz/meter/status/scale elements).
 - All 459 tests pass, 98% coverage, `make check` clean.
+
+## Tuner reference in Settings, 2026-11-16 (T72)
+- Updated `backend/app/routes/settings.py`: added `tuner_a4` parsing and saving in POST handler. If the value is a valid integer in 430–450, it is persisted; otherwise it is silently skipped (existing value preserved, no error shown for tuner_a4 specifically). Non-numeric and empty values are also skipped.
+- Updated `backend/tests/test_settings.py`: added 11 tests covering default 440 display, saved value display, POST saving of valid values (430, 432, 440, 450), rejection of out-of-range (429, 451), rejection of non-numeric ("abc"), empty field not overwriting existing, and tuner page using saved value.
+- All 470 tests pass, 98.31% coverage, `make check` clean.

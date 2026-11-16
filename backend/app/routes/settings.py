@@ -111,6 +111,16 @@ async def post_settings(
             ),
             status_code=422,
         )
+    tuner_a4_str = form.get("tuner_a4", "")
+    if isinstance(tuner_a4_str, str) and tuner_a4_str.strip():
+        try:
+            tuner_val = int(tuner_a4_str.strip())
+        except (ValueError, TypeError):
+            tuner_val = None
+        if tuner_val is not None and (tuner_val < 430 or tuner_val > 450):
+            tuner_val = None
+    else:
+        tuner_val = None
     with request.app.state.sessionmaker() as db:
         try:
             db.execute(
@@ -129,6 +139,15 @@ async def post_settings(
                 ),
                 {"v": _validate_theme(form)},
             )
+            if tuner_val is not None:
+                db.execute(
+                    text(
+                        "INSERT INTO setting (key, value) "
+                        "VALUES ('tuner_a4', :v) "
+                        "ON CONFLICT (key) DO UPDATE SET value = :v"
+                    ),
+                    {"v": str(tuner_val)},
+                )
             db.commit()
         finally:
             db.close()
