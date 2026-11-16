@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+
+{% block title %}Woodshed — {{ item.title }}{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Back", "/items/" ~ item.id, back=True) }}{% endblock %}
+
+{% block content %}
+<div class="tab-viewer stack-lg">
+    <h2 class="visually-hidden">Tab viewer</h2>
+    <div class="attachment-info">
+        <p class="small">{{ attachment.label or attachment.filename }}</p>
+    </div>
+    <div id="tab" data-file="/media/attachment/{{ attachment.id }}"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vendor/alphatab/alphaTab.min.js"></script>
+<script type="module" src="/static/js/tab.js"></script>
+{% endblock %}

@@ -1,45 +1,39 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
+{% extends "base.html" %}
 
-{% block title %}Woodshed -- Library{% endblock %}
+{% block title %}Library{% endblock %}
+
+{% block nav_right %}
+  {{ ui.nav_link("Add", "/items/new", icon_name="plus") }}
+{% endblock %}
 
 {% block content %}
-<h1>Library</h1>
-
-<form method="get" action="/library" class="library-filters">
-    <label for="kind">Kind</label>
-    <select name="kind" id="kind">
-        <option value="">All</option>
-        <option value="song"{% if kind_filter == "song" %} selected{% endif %}>Song</option>
-        <option value="exercise"{% if kind_filter == "exercise" %} selected{% endif %}>Exercise</option>
-    </select>
-
-    <label for="q">Search</label>
-    <input type="text" name="q" id="q" placeholder="Search title" value="{{ q or '' }}">
-
-    <button type="submit">Filter</button>
-    {% if kind_filter or q %}
-    <a href="/library" class="clear-link">Clear</a>
-    {% endif %}
+<form method="get" class="stack">
+  {{ ui.search("q", "Search the library", q, "Search the library") }}
+  {{ ui.segmented_links("Kind", [
+    ("/library", "All", not kind_filter),
+    ("/library?kind=song", "Songs", kind_filter == "song"),
+    ("/library?kind=exercise", "Exercises", kind_filter == "exercise")
+  ]) }}
 </form>
 
 {% if not groups %}
-<div class="library-empty">
-    <p>No items in your library.</p>
-    <a href="/items/new">Add your first item</a>
-</div>
-{% endif %}
-
-{% for status, items in groups.items() %}
-<section class="library-group">
-    <h2>{{ status|capitalize }}</h2>
-    <ul class="library-list">
+  {{ ui.empty("No items", "Add the songs and exercises you're working on.", "/items/new", "Add a song") }}
+{% else %}
+  {% for status, items in groups.items() %}
+    {% call ui.section(status|capitalize) %}
+      {% call ui.group() %}
         {% for item in items %}
-        <li class="library-item">
-            <span class="kind-badge kind-{{ item.kind }}">{{ item.kind }}</span>
-            <a href="/items/{{ item.id }}">{{ item.title }}</a>
-        </li>
+          {{ ui.row(
+            item.title,
+            sub=item.artist or "Exercise",
+            value=(item.current_bpm ~ " bpm") if item.current_bpm else None,
+            href="/items/" ~ item.id,
+            thumb=("/media/cover/" ~ item.id) if item.has_cover else None
+          ) }}
         {% endfor %}
-    </ul>
-</section>
-{% endfor %}
+      {% endcall %}
+    {% endcall %}
+  {% endfor %}
+{% endif %}
 {% endblock %}

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.items_service import ItemIn, create_item, get_item, update_item
-from app.templating import env
+from app.templating import env, get_theme
 
 # ---------------------------------------------------------------------------
 # Template helpers
@@ -44,6 +44,7 @@ def _render_form(
         "status_options": _STATUS_OPTIONS,
         "item": item_in,
         "errors": errors,
+        "theme": get_theme(request.app),
     }
     if edit_id is not None:
         context["edit_id"] = edit_id
@@ -111,6 +112,7 @@ async def get_new_item(request: Request) -> HTMLResponse:
             status_options=_STATUS_OPTIONS,
             item=None,
             errors=None,
+            theme=get_theme(request.app),
         )
     )
 
@@ -149,6 +151,7 @@ async def get_edit_item(
             item=_item_to_form_data(item),
             errors=None,
             edit_id=item_id,
+            theme=get_theme(request.app),
         )
     )
 

@@ -1,5 +1,8 @@
 // Pure countdown timer for a single practice block.
 // See docs/frontend.md §js.
+//
+// Units: `now` is milliseconds (`Date.now()`), `plannedSeconds`,
+// `remaining()` and `played()` are seconds.
 
 export function createTimer(plannedSeconds) {
   let remaining = plannedSeconds;
@@ -17,8 +20,8 @@ export function createTimer(plannedSeconds) {
 
     pause(now) {
       if (running) {
-        played += now - startRunningAt;
-        remaining = Math.max(0, remaining - (now - startRunningAt));
+        played += (now - startRunningAt) / 1000;
+        remaining = Math.max(0, remaining - (now - startRunningAt) / 1000);
       }
       running = false;
     },
@@ -34,14 +37,14 @@ export function createTimer(plannedSeconds) {
 
     remaining(now) {
       if (running) {
-        return Math.max(0, remaining - (now - startRunningAt));
+        return Math.max(0, remaining - (now - startRunningAt) / 1000);
       }
       return remaining;
     },
 
     played(now) {
       if (running) {
-        return played + (now - startRunningAt);
+        return played + (now - startRunningAt) / 1000;
       }
       return played;
     },

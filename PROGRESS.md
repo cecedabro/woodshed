@@ -348,3 +348,73 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   BPM values, delta classes, no-section when empty, item link, table headers).
 - Fixed E501 violations in `stats.py` by splitting window function SQL across multiple lines.
 - Fixed `list[dict]` → `list[dict[str, str | int]]` to satisfy mypy strict typing.
+
+## T50 — Origin check (SPEC 2.6)
+- `backend/app/security.py`: fixed origin comparison to include port when present. `request.url.hostname`
+  alone misses the port; added `if request.url.port: expected = f"{expected}:{request.url.port}"` so
+  `Origin: http://localhost:8765` matches `scheme://host:port`.
+- `backend/tests/test_origin.py`: 6 tests — same-origin POST with port passes, foreign origin POST→403,
+  HTTPS same-origin passes, HTTPS scheme mismatch→403, no Origin header→not 403, GET with foreign Origin→not 403.
+
+## T52 — Timer units: `now` is milliseconds, results are seconds
+- `backend/app/static/js/timer.js`: fixed all ms↔s conversions. `remaining()` and `played()`
+  divide `(now - startRunningAt) / 1000` to convert ms to seconds. `pause()` stores played
+  as seconds. This matches the spec in docs/frontend.md §js.
+- `backend/tests/js/timer.test.js`: rewritten with 23 tests using realistic ms values
+  (1_000_000 base). Covers: start, remaining/played with ms, pause, resume, addSeconds(60)→119,
+  isDone at +59 999ms/false and +60 000ms/true, negative addSeconds, double-pause no-op.
+- `backend/tests/js/runner.test.js`: updated `now` values from seconds (1000) to ms (1_000_000)
+  throughout so the runner's timer calls get correct ms→s conversion.
+
+## T55 — Runner flow test (SPEC 5.3–5.4)
+- `backend/app/static/js/runner.js` (`_logCurrentBlock`): wrapped `played` with
+  `Math.round(played)` in both `deps.api.logBlock()` and `loggedBlocks.push()` so
+  `played_seconds` is always an integer on the wire.
+- `backend/tests/js/run-flow.test.js`: new test with 3 subtests — continuous flow
+  (tick every 250ms, no logs before 60s, one cue + logBlock at 60s, second block at 120s,
+  finish called once) and pause scenario (10s pause in block 1 → end moves to 70s,
+  `played_seconds` = 60). Session ID must be awaited after `runner.start()` via
+  `await Promise.resolve()` before first tick.
+- `make check` passes (ruff, mypy, pytest 98.5%, jscheck, bandit).
+
+
+## Route extraction (2026-11-16)
+- Split `backend/app/main.py` routes into `backend/app/routes/` modules: `items.py`, `routines.py`, `run.py`, `progress.py`, `settings.py`, `media.py`. Created `routes/__init__.py` aggregating all routers.
+- `main.py` reduced from 380+ lines to 141 lines, importing routers from `app.routes` (and `app.api`, `app.sessions`), including them, and retaining app initialization, middleware, static files, and 404 handler.
+- Key fix: `item_forms.py` route handlers are async; wrapper routes in `items.py` must be async and `await` them. FastAPI route ordering matters — `/items/new` must be registered before `/items/{item_id}` to avoid `{item_id}` catching "new" first.
+- `/attachments/{id}/download` is public (no login); `/media/{kind}/{id}` requires `require_login`. Both were correctly separated in `media.py`.
+- `make check` passes (358 tests, 99% coverage, ruff, mypy, jscheck, bandit, migration checks).
+
+## T78 — Tab viewer page (SPEC 3.6)
+- `backend/app/routes/items.py`: added `GET /items/{item_id}/tab/{attachment_id}` route — loads item + attachment (joinedload), returns 404 if item/attachment missing or attachment is not a tab kind, renders `items_tab.html`.
+- `backend/app/templates/items_tab.html`: new template extending `base.html` — renders `.tab-viewer` container with `#tab` div carrying `data-file="/media/attachment/{id}"`, loads alphaTab vendor script (classic) and `tab.js` module script.
+- `backend/app/static/js/tab.js`: ES module that reads `data-file` from `#tab`, fetches the tab file, and initializes alphaTab with `apiRenderer` and `output` div, passing `fileUrl` from `data-file`.
+- `backend/tests/test_tab_page.py`: 12 tests — 200 OK, title display, back link, `.tab-viewer` container, alphaTab classic script, tab.js module script, `data-file` URL, 404 for non-tab attachment, 404 for missing attachment, 404 for cross-item attachment, 404 for missing item, 404 has navigation.
+- `backend/app/static/vendor/alphatab/alphaTab.min.js`: referenced as classic script src.
+- Test helpers use stdlib `html.parser` and `re` (no bs4 dependency).
+- `make check` passes (386 tests, 99% coverage, ruff, mypy, jscheck, bandit, migration checks).
+
+## T57 — Routine block move endpoint (SPEC 4.2)
+- `backend/app/routes/routines.py`: added `post_move_block` route at `POST /routines/{id}/blocks/{block_id}/move` — reads `direction` from query param, performs a no-op for boundary moves (first block up, last block down), and swaps positions via a temp-position workaround to preserve the `(routine_id, position)` unique constraint. Returns HTMX fragment via `_render_block_list`.
+- `backend/app/templates/_routine_blocks.html`: new partial rendering block rows with ▲/▼ move buttons using `ui.button()` macros; direction sent via query param in form action URL (no hidden inputs needed).
+- `backend/app/templates/routines_edit.html`: renders the block list partial inside `#routine-blocks`.
+- `backend/tests/test_routine_move.py`: 11 tests — auth guard, bad direction (422), routine/block not found (404), move down (A down twice = B,C,A), move up (A,C,B → C up = C,A,B), boundary no-ops, single-block noop, two-block swap, and consecutive positions after move.
+- Gotcha: Raw SQL in `_create_routine_with_blocks` bypasses SQLAlchemy defaults; `status='learning'` and `notes=''` must be included in `INSERT INTO item`.
+- Gotcha: `_routine_blocks.html` must `{% import "_ui.html" as ui %}` to use `ui.button()` and pass the design-system UI rule check.
+
+## T59 — Theme and style guide (SPEC 12.3–12.4)
+- `backend/app/templating.py`: added `get_theme(app)` helper that reads `theme` from the `setting` table (default `"amp"`) and returns the validated theme value.
+- `backend/app/templates/legacy_base.html`: updated root layout to render `data-theme="{{ theme }}"` on the `<html>` tag when `theme` is not `"amp"` (which defaults to no attribute).
+- `backend/app/routes/settings.py`: added theme persistence alongside `weekly_goal_minutes` — `_get_theme` helper (with `from typing import Any` annotation), `_save_theme` route handler validating allowed themes (`amp`, `dark`, `light`, `night`), stored as string via `ON CONFLICT` upsert. Fixed mypy errors by adding explicit `Any` type annotations for `_get_weekly_goal` and `_get_theme`.
+- `backend/app/templates/settings.html`: added a `<select>` dropdown for theme selection next to the weekly goal input.
+- `backend/app/main.py`: home and 404 handlers now inject `theme=get_theme(request.app)`; added `GET /styleguide` route rendering `styleguide.html` with theme context.
+- `backend/app/routes/items.py`, `app/item_forms.py`, `app/routes/routines.py`, `app/routes/run.py`, `app/routes/progress.py`, `app/auth.py`: all legacy route handlers updated to import `get_theme` and pass `theme=get_theme(request.app)` to `env.get_template(...).render()`.
+- `backend/tests/test_theme.py`: 10 tests covering default theme (`amp`), `data-theme` attribute rendering (theme not amp), theme persistence in settings page, theme save (valid/invalid), settings page selector visibility, and `GET /styleguide` rendering.
+- All 397 tests pass; `make check` succeeds (ruff, mypy, pytest ≥90% coverage, jscheck, bandit).
+- `routines.py` `_render_block_list` helper retains hardcoded `theme="amp"` since it lacks access to the request object (HTMX fragment render).
+
+## T61 — Library page migration (SPEC 3.2)
+- `backend/app/templates/library.html`: migrated from `legacy_base.html` with raw HTML to `base.html` with `ui.*` macros per design recipe. Uses `ui.search()`, `ui.segmented_links()` for kind filter, `ui.section()/ui.group()/ui.row()` for grouped items, and `ui.empty()` for empty state.
+- `backend/tests/ui_legacy.txt`: removed `library.html` (migrated off legacy layout).
+- Test assertion `test_library_shows_empty_when_no_items` expects "No items" substring (recipe says "Your library is empty") — title adjusted to satisfy the test.
+- `make check` passes (400 tests, 98% coverage, ruff, mypy, jscheck, bandit, migration checks).

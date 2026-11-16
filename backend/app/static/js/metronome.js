@@ -96,19 +96,33 @@ export class Metronome {
     this._playing = false;
     this._timerId = null;
     this._nextBeatIndex = 0;
+    this._startTime = 0;
     this._cue = null; // optional callback for block-end cue
-    this._scheduledBeats = [];
+    this._onBeatCb = null;
+  }
+
+  /**
+   * Register a callback invoked on each scheduled beat.
+   * Called with { beat, accent } — use for lighting .beats.
+   * @param {{(info: {beat: number, accent: boolean}): void} | null} cb
+   */
+  onBeat(cb) {
+    this._onBeatCb = cb;
   }
 
   /**
    * Start playing at the given BPM (must not be called while already playing).
+   *
+   * Stores startTime = ctx.currentTime * 1000 + 50 once; every tick calls
+   * beatTimes(startTime, bpm, beatsPerBar, nextBeat, now + 100) with that
+   * same startTime, so beat k stays at startTime + k·60000/bpm.
    * @param {number} bpm
    */
   start(bpm) {
     this._bpm = clampBpm(bpm);
     this._playing = true;
     this._nextBeatIndex = 0;
-    this._scheduledBeats = [];
+    this._startTime = this._ctx.currentTime * 1000 + 50;
     this._tryResumeContext();
     this._tick();
     this._timerId = setInterval(() => this._tick(), 25);
@@ -122,15 +136,23 @@ export class Metronome {
       this._timerId = null;
     }
     this._nextBeatIndex = 0;
-    this._scheduledBeats = [];
   }
 
   /**
    * Change BPM while playing.
+   *
+   * Restarts the count: new startTime = the time of the next unscheduled beat,
+   * nextBeat = 0.
    * @param {number} bpm
    */
   setBpm(bpm) {
     this._bpm = clampBpm(bpm);
+    const nowMs = this._ctx.currentTime * 1000;
+    const interval = 60000 / this._bpm;
+    // Find k where startTime_new + k * interval is just after now
+    const k = Math.floor(nowMs / interval);
+    this._startTime = nowMs - k * interval;
+    this._nextBeatIndex = 0;
   }
 
   /**
@@ -192,11 +214,11 @@ export class Metronome {
     const nowMs = ctx.currentTime * 1000;
     const lookAheadMs = 100;
     const scheduleAheadMs = 50;
-    const interval = 60000 / this._bpm;
 
-    // Generate beats for the next look-ahead window starting from where we left off
+    // Generate beats for the next look-ahead window using the fixed startTime
+    // so beat k stays at startTime + k·60000/bpm.
     let beats = beatTimes(
-      nowMs + scheduleAheadMs,
+      this._startTime,
       this._bpm,
       this._beatsPerBar,
       this._nextBeatIndex,
@@ -204,7 +226,15 @@ export class Metronome {
     );
 
     for (const beat of beats) {
+      // Skip beats that are already in the past (can happen after setBpm)
+      if (beat.time < nowMs) continue;
+
       this._scheduleBeat(beat);
+
+      // Notify the onBeat callback
+      if (this._onBeatCb) {
+        this._onBeatCb({ beat: beat.beat, accent: beat.accent, time: beat.time });
+      }
     }
 
     // Advance the beat index for the next round

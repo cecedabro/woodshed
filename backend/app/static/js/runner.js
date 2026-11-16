@@ -60,14 +60,14 @@ export function createRunner(blocks, deps) {
       item_id: block.item_id,
       position: currentIndex,
       planned_seconds: block.planned_seconds,
-      played_seconds: played,
+      played_seconds: Math.round(played),
       bpm: currentBpm,
     });
     loggedBlocks.push({
       item_id: block.item_id,
       position: currentIndex,
       planned_seconds: block.planned_seconds,
-      played_seconds: played,
+      played_seconds: Math.round(played),
       bpm: currentBpm,
     });
   }
