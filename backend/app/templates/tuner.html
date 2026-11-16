@@ -5,6 +5,9 @@
 
 {% block content %}
 <div class="stack-lg" id="tuner" data-a4="{{ a4 }}">
+  {% call ui.section(id="tuner-top") %}
+    {{ ui.segmented_links("Tools", [("/tuner", "Tuner", True), ("/metronome", "Metronome", False)]) }}
+  {% endcall %}
   <div class="tuner">
     <p class="tuner-note" id="tuner-note">–</p>
     <p class="tuner-hz" id="tuner-hz">&nbsp;</p>

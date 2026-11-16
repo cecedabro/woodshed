@@ -17,6 +17,7 @@ from app.db import make_engine, make_sessionmaker
 from app.routes import (
     items_router,
     media_router,
+    metronome_router,
     progress_router,
     routines_router,
     run_router,
@@ -169,6 +170,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(routines_router)
     app.include_router(run_router)
     app.include_router(settings_router)
+    app.include_router(metronome_router)
     app.include_router(tuner_router)
     app.include_router(api_router)
     app.include_router(sessions_router)

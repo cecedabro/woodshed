@@ -3,6 +3,16 @@
 Append 3–5 lines per task below. Older entries (T01–T61) are in `docs/progress-history.md`;
 don't read that file, search it with `rg` if you need something.
 
+## Metronome page (T90)
+- Created `backend/app/routes/metronome.py` with `GET /metronome` route rendering the template with default BPM and `active="tuner"`.
+- Created `backend/app/templates/metronome.html` per the design recipe: extends `base.html`, `.stack-lg` wrapper, `#met-bpm` display, `ui.stepper()` for tempo (50-220, step 5), `#met-tap` button, `ui.segmented()` for beats (2/3/4/6), `ui.range_row()` for volume (0.0-1.0), `#met-start` toggle button, and `#met-beats` with 4 spans. Loads `metronome-page.js` as an ES module importing `./metronome.js`.
+- Created `backend/app/static/js/metronome-page.js` as a stub ES module.
+- Wired router in `backend/app/routes/__init__.py` and `backend/app/main.py` (mounted before `tuner_router`).
+- Added `ui.segmented_links("Tools")` to both `tuner.html` and `metronome.html` for mutual navigation.
+- Fixed `ui.section()` calls to use `id="…"` instead of `attrs={"id": "…"}` (the macro only accepts `header`, `footer`, `id`).
+- Created `backend/tests/test_metronome_page.py` (12 tests): 200 status, active tab, mutual links, module script tag, all ID elements, beats selector options, BPM display, stepper buttons, tap button, volume input, start button, beats display.
+- All 610 tests pass, 97% coverage, `make check` clean.
+
 ## Gotchas so far
 - Login: one `LoginRequiredMiddleware` in `app/auth.py` guards everything except
   `OPEN_PATHS` / `/static/`. Routes need no login dependency. The `client` fixture is
