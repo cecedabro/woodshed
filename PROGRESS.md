@@ -212,4 +212,10 @@ don't read that file, search it with `rg` if you need something.
 ## Item upload form always renders (T87)
 - Fixed `backend/app/templates/items_detail.html`: moved the upload form outside the `{% if item.attachments %}` block so it renders unconditionally, placing it below the empty state.
 - Created `backend/tests/test_item_upload_form.py` (9 tests): verifies form existence with zero/one/audio/pdf attachments, correct `action`, `enctype`, `type="file"`, `name="file"` attributes, and exact form count (1) regardless of attachment presence.
+
+## Search MusicBrainz HTMX form (T88)
+- Replaced the broken inline `<script>` (which used non-existent `hx.get()`) in `backend/app/templates/items_new.html` with an HTMX form: `<form hx-get="/items/lookup" hx-target="#mb-results">` containing `title` and `artist` inputs and a submit button.
+- The form is placed before (not inside) the main item form, with `#mb-results` div between them.
+- Created `backend/tests/test_item_new_lookup.py` (5 tests): no inline `<script>` without `src`, HTMX form with correct attributes, inputs named `title`/`artist`, form not nested in another form, `#mb-results` exists.
+- All 579 tests pass, 97% coverage, `make check` clean.
 - All 574 tests pass, 97% coverage, `make check` clean.
