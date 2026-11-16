@@ -60,3 +60,16 @@ don't read that file, search it with `rg` if you need something.
 - Added `.remove-form` class (`display: inline`) to `pages.css`.
 - No assertions in `test_attachments.py` checked old markup; no test updates needed.
 - All 411 tests pass, 99% coverage, `make check` clean.
+
+## Item forms migration: new + edit pages (T81)
+- Created `backend/app/templates/partials/item_fields.html` with shared form sections (Song,
+  Practice, Notes) using `ui.select()`, `ui.field()`, `ui.textarea()` inside `.group` divs.
+  Replaced `ui.section()` calls with plain `<section>` elements since blocking macros can't
+  be called with `{{ }}` inside an `{% include %}` partial.
+- Rewrote `items_new.html` and `items_edit.html` to extend `base.html` with `{% import "_ui.html" as ui %}`
+  (required by `test_ui_rules` even though `base.html` imports it), define `nav_left` back button,
+  and include the shared partial. New page adds a "Find the song" section before the form.
+- Updated `item_forms.py`: added `mbid`, `rgid`, `back_url` context to `_render_form`, `get_new_item`,
+  and `get_edit_item`; added `q=""` to `get_new_item`.
+- Removed both templates from `backend/tests/ui_legacy.txt`.
+- All 419 tests pass, 100% coverage on key modules, `make check` clean.

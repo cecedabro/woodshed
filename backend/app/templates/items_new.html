@@ -1,78 +1,16 @@
-{% extends "legacy_base.html" %}
-
-{% block title %}Woodshed -- New Item{% endblock %}
-
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Woodshed · New Item{% endblock %}
+{% block nav_title %}New Item{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Back", back_url, back=True) }}{% endblock %}
 {% block content %}
-<h1>New Item</h1>
-<form method="post" action="/items/new">
-    <fieldset>
-        <legend>Details</legend>
-
-        <div class="field">
-            <label for="kind">Kind</label>
-            {% if errors and 'kind' in errors %}
-            <span class="error">{{ errors['kind'] }}</span>
-            {% endif %}
-            <select name="kind" id="kind" {% if errors and 'kind' in errors %}class="error"{% endif %} required>
-                {% for val, label in kind_options %}
-                <option value="{{ val }}"{% if item and item.kind == val %} selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="field">
-            <label for="title">Title</label>
-            {% if errors and 'title' in errors %}
-            <span class="error">{{ errors['title'] }}</span>
-            {% endif %}
-            <input type="text" name="title" id="title" placeholder="Title" value="{{ item.title if item else '' }}" required>
-        </div>
-
-        <div class="field">
-            <label for="artist">Artist</label>
-            {% if errors and 'artist' in errors %}
-            <span class="error">{{ errors['artist'] }}</span>
-            {% endif %}
-            <input type="text" name="artist" id="artist" placeholder="Artist (optional)" value="{{ item.artist if item and item.artist else '' }}">
-        </div>
-
-        <div class="field">
-            <label for="status">Status</label>
-            {% if errors and 'status' in errors %}
-            <span class="error">{{ errors['status'] }}</span>
-            {% endif %}
-            <select name="status" id="status" {% if errors and 'status' in errors %}class="error"{% endif %}>
-                {% for val, label in status_options %}
-                <option value="{{ val }}"{% if item and item.status == val %} selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="field">
-            <label for="current_bpm">Current BPM</label>
-            {% if errors and 'current_bpm' in errors %}
-            <span class="error">{{ errors['current_bpm'] }}</span>
-            {% endif %}
-            <input type="number" name="current_bpm" id="current_bpm" placeholder="Current BPM (optional)" value="{{ item.current_bpm if item and item.current_bpm else '' }}" min="20" max="400">
-        </div>
-
-        <div class="field">
-            <label for="original_url">Original URL</label>
-            {% if errors and 'original_url' in errors %}
-            <span class="error">{{ errors['original_url'] }}</span>
-            {% endif %}
-            <input type="url" name="original_url" id="original_url" placeholder="https://..." value="{{ item.original_url if item and item.original_url else '' }}">
-        </div>
-
-        <div class="field">
-            <label for="notes">Notes</label>
-            {% if errors and 'notes' in errors %}
-            <span class="error">{{ errors['notes'] }}</span>
-            {% endif %}
-            <textarea name="notes" id="notes" rows="6" placeholder="Notes (plain text)" cols="50">{{ item.notes if item and item.notes else '' }}</textarea>
-        </div>
-    </fieldset>
-
-    <button type="submit">Create</button>
+{% call ui.section("Find the song") %}
+  <form method="get" action="/items/lookup" class="form">
+    {{ ui.search("q", "Search MusicBrainz", q) }}
+  </form>
+  <div id="mb-results"></div>
+{% endcall %}
+<form method="post" action="/items/new" class="form stack-lg">
+  {% include "partials/item_fields.html" %}
 </form>
 {% endblock %}

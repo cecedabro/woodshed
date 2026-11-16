@@ -44,6 +44,9 @@ def _render_form(
         "status_options": _STATUS_OPTIONS,
         "item": item_in,
         "errors": errors,
+        "mbid": "",
+        "rgid": "",
+        "back_url": f"/items/{edit_id}" if edit_id is not None else "/library",
         "theme": get_theme(request.app),
     }
     if edit_id is not None:
@@ -112,6 +115,10 @@ async def get_new_item(request: Request) -> HTMLResponse:
             status_options=_STATUS_OPTIONS,
             item=None,
             errors=None,
+            q="",
+            mbid="",
+            rgid="",
+            back_url="/library",
             theme=get_theme(request.app),
         )
     )
@@ -151,6 +158,9 @@ async def get_edit_item(
             item=_item_to_form_data(item),
             errors=None,
             edit_id=item_id,
+            mbid="",
+            rgid="",
+            back_url=f"/items/{item_id}",
             theme=get_theme(request.app),
         )
     )
