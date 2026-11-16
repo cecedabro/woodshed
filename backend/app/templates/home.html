@@ -1,27 +1,23 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
+{% extends "base.html" %}
 
-{% block title %}Woodshed — Home{% endblock %}
-
+{% block title %}Woodshed{% endblock %}
+{% block nav_right %}<span class="mobile-only">{{ ui.nav_link("Settings", "/settings", icon_name="settings") }}</span>{% endblock %}
 {% block content %}
-<h1>Practice</h1>
-
-<section class="home-progress">
-    <progress value="{{ week_minutes }}" max="{{ goal }}"></progress>
-    <span>{{ week_minutes }} of {{ goal }} min</span>
-</section>
-
-{% if routines %}
-<ul class="home-routine-list">
-    {% for r in routines %}
-    <li class="home-routine-item{% if r.most_recent %} home-routine-item--primary{% endif %}">
-        <a href="/run/{{ r.id }}?autostart=1" class="home-start-btn">
-            <span class="home-start-btn__title">{{ r.name }}</span>
-            <span class="home-start-btn__meta">{{ r.block_count }} block{{ "s" if r.block_count != 1 }}, {{ r.total_minutes }} min</span>
-        </a>
-    </li>
-    {% endfor %}
-</ul>
+{% call ui.section("This week", footer="Mon\u2013Sun. Weekly minutes only.") %}
+  {% call ui.group(pad=True) %}{{ ui.progress(week_minutes, goal, aside=aside_text) }}{% endcall %}
+{% endcall %}
+{% if first %}
+{% call ui.section("Start practising") %}
+  <div class="stack">
+    {{ ui.start(first.name, first.n_blocks ~ " blocks \u00b7 " ~ first.minutes ~ " min", "/run/" ~ first.id ~ "?autostart=1") }}
+    {% call ui.group() %}
+      {% for r in others %}{{ ui.row(r.name, sub=r.n_blocks ~ " blocks \u00b7 " ~ r.minutes ~ " min", href="/run/" ~ r.id ~ "?autostart=1") }}{% endfor %}
+      {{ ui.row("Practise one song\u2026", href="/library", tone="accent") }}
+    {% endcall %}
+  </div>
+{% endcall %}
 {% else %}
-<p class="library-empty">No routines yet. <a href="/routines/new">Create one</a>.</p>
+{{ ui.empty("No routines yet", "A routine is a list of blocks: what to play and for how long.", "/routines/new", "New routine", icon_name="routines") }}
 {% endif %}
 {% endblock %}

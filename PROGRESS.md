@@ -24,3 +24,15 @@ don't read that file, search it with `rg` if you need something.
 - Routine editor add/remove + the editor page in the new design.
 - Old tests that asserted old markup (raw `<input>`, `class="error"`, five nav links,
   `style.css`) now accept the new markup.
+
+## Home page migration, 2026-11-16 (T69)
+- Rewrote `backend/app/templates/home.html` to extend `base.html` and use the new UI
+  macros (`ui.section`, `ui.progress`, `ui.start`, `ui.row`, `ui.empty`).
+- Updated `backend/app/main.py` `home()` route: replaced `routines` context with `first`,
+  `others`, and `aside_text` (computed from `goal - week_minutes` or "Goal reached").
+- Updated `backend/tests/test_home.py`: replaced `primary` class assertion with `start` class
+  check and added `test_home_progress_shows_of_goal` for "of 120 min".
+- Removed `home.html` from `backend/tests/ui_legacy.txt`.
+- Footer text uses "Weekly minutes only." (avoiding "streak" which a behavioural test
+  asserts must not appear on the home page).
+- All 408 tests pass, 99% coverage, `make check` clean.

@@ -94,22 +94,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             {
                 "id": row.id,
                 "name": row.name,
-                "block_count": row.block_count,
-                "total_minutes": row.total_minutes,
-                "last_practised": row.last_practised,
+                "n_blocks": row.block_count,
+                "minutes": row.total_minutes,
             }
             for row in rows
         ]
         if routines:
-            routines[0]["most_recent"] = True
+            first = routines.pop(0)
+            others = routines
+        else:
+            first = None
+            others = []
+
+        if goal > 0:
+            remaining = goal - week_minutes
+            aside_text = "Goal reached" if remaining <= 0 else f"{remaining} to go"
+        else:
+            aside_text = None
+
         template = env.get_template("home.html")
         return HTMLResponse(
             template.render(
                 {
                     "active": "home",
-                    "routines": routines,
+                    "first": first,
+                    "others": others,
                     "week_minutes": week_minutes,
                     "goal": goal,
+                    "aside_text": aside_text,
                     "theme": get_theme(app),
                 }
             )
