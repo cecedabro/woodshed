@@ -73,3 +73,8 @@ don't read that file, search it with `rg` if you need something.
   and `get_edit_item`; added `q=""` to `get_new_item`.
 - Removed both templates from `backend/tests/ui_legacy.txt`.
 - All 419 tests pass, 100% coverage on key modules, `make check` clean.
+- Migrated `items_delete.html` per "Delete confirmations" recipe: extends `base.html`, uses
+  `ui.group(pad=True)` with the confirmation question and removal list, `ui.button("Delete",
+  kind="danger", type="submit")` in `.actions.actions-end`, and a ghost "Cancel" link back to
+  the detail page. Nav_left has a back button to the item detail. Removed from `ui_legacy.txt`.
+- All 422 tests pass, 99% coverage, `make check` clean.

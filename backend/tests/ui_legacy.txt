@@ -1,7 +1,6 @@
 # Templates and stylesheets still on the old layout (tests/test_ui_rules.py skips them).
 # A migration task removes its lines. Never add lines.
 404.html
-items_delete.html
 login.html
 macros.html
 progress.html
