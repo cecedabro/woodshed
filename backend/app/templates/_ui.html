@@ -1,0 +1,230 @@
+{#- Woodshed UI components. Human-owned (docs/design.md).
+
+    Import in every page:  {% import "_ui.html" as ui %}
+    Pages build their markup from these macros plus the layout helpers in
+    components.css (.stack, .cluster, .spread, .split, .section ...).
+    Raw <button>, <input>, <select> and <textarea> appear only in this file.
+
+    `attrs` is a dict of extra attributes (hx-*, data-*, id, aria-*, form, ...):
+        ui.button("Save", kind="primary", type="submit", attrs={"hx-post": "/x"})
+-#}
+
+{%- set _icons = {
+  "home": "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
+  "library": "M4 4h4v16H4zM10 4h4v16h-4zM16 5l4 1-3 14-4-1z",
+  "routines": "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
+  "tuner": "M12 3v4M4.9 6.9l2.8 2.8M3 14h4M17 14h4M19.1 6.9l-2.8 2.8M12 14l3-5M5 20h14",
+  "progress": "M4 20V10M10 20V4M16 20v-8M22 20H2",
+  "settings": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
+  "play": "M8 5v14l11-7z",
+  "pause": "M7 5h3v14H7zM14 5h3v14h-3z",
+  "skip": "M5 5l9 7-9 7zM17 5h2v14h-2z",
+  "plus": "M12 5v14M5 12h14",
+  "minus": "M5 12h14",
+  "search": "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5",
+  "back": "M15 5l-7 7 7 7",
+  "record": "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z",
+  "music": "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
+  "file": "M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5",
+  "trash": "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
+  "edit": "M4 20h4L19 9l-4-4L4 16zM14 6l4 4",
+  "check": "M5 12l5 5 9-10",
+  "mic": "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3",
+} -%}
+{%- set _fill_icons = ["play", "pause", "skip", "record"] -%}
+
+{% macro icon(name, label=None) -%}
+<svg viewBox="0 0 24 24" width="24" height="24"{% if label %} role="img" aria-label="{{ label }}"{% else %} aria-hidden="true" focusable="false"{% endif %}>
+{%- if name in _fill_icons %}<path d="{{ _icons[name] }}" fill="currentColor"/>
+{%- else %}<path d="{{ _icons[name] }}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>{% endif -%}
+</svg>
+{%- endmacro %}
+
+{% macro chevron() -%}
+<svg class="row-chevron" viewBox="0 0 10 16" aria-hidden="true" focusable="false"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- endmacro %}
+
+{#- ---------------------------------------------------------------- nav bar actions -#}
+{% macro nav_link(label, href, icon_name=None, back=False) -%}
+<a class="navbar-action" href="{{ href }}"{% if icon_name and not back %} aria-label="{{ label }}"{% endif %}>
+  {%- if back %}{{ icon("back") }}<span>{{ label }}</span>
+  {%- elif icon_name %}{{ icon(icon_name) }}
+  {%- else %}{{ label }}{% endif -%}
+</a>
+{%- endmacro %}
+
+{#- ---------------------------------------------------------------- sections and lists -#}
+{% macro section(header=None, footer=None, id=None) -%}
+<section class="section"{% if id %} id="{{ id }}"{% endif %}>
+  {%- if header %}<h2 class="section-header">{{ header }}</h2>{% endif %}
+  {{ caller() }}
+  {%- if footer %}<p class="section-footer">{{ footer }}</p>{% endif %}
+</section>
+{%- endmacro %}
+
+{% macro group(pad=False, attrs={}) -%}
+<div class="group{% if pad %} group-pad{% endif %}"{{ attrs|xmlattr }}>{{ caller() }}</div>
+{%- endmacro %}
+
+{#- A list row. With href it is a link with a chevron; with button=True a submit button. -#}
+{% macro row(title, sub=None, href=None, value=None, thumb=None, tone=None, chevron_=None, attrs={}) -%}
+{%- set tag = "a" if href else "div" -%}
+{%- set show_chevron = chevron_ if chevron_ is not none else (href is not none) -%}
+<{{ tag }} class="row{% if tone %} row-{{ tone }}{% endif %}"{% if href %} href="{{ href }}"{% endif %}{{ attrs|xmlattr }}>
+  {%- if thumb %}<img class="row-thumb" src="{{ thumb }}" alt="" loading="lazy" width="40" height="40">{% endif %}
+  <span class="row-main"><span class="row-title">{{ title }}</span>{% if sub %}<span class="row-sub">{{ sub }}</span>{% endif %}</span>
+  {%- if value is not none and value != "" %}<span class="row-value">{{ value }}</span>{% endif %}
+  {%- if caller is defined %}{{ caller() }}{% endif %}
+  {%- if show_chevron %}{{ chevron() }}{% endif -%}
+</{{ tag }}>
+{%- endmacro %}
+
+{#- A row that submits a form (e.g. delete in a list). -#}
+{% macro row_button(title, tone=None, type="submit", attrs={}) -%}
+<button class="row{% if tone %} row-{{ tone }}{% endif %}" type="{{ type }}"{{ attrs|xmlattr }}><span class="row-main"><span class="row-title">{{ title }}</span></span></button>
+{%- endmacro %}
+
+{#- ---------------------------------------------------------------- buttons -#}
+{#- kind: secondary | primary | danger | outline-danger | ghost; size: None | small | big -#}
+{% macro _btn_class(kind, size, block) -%}
+btn{% if kind != "secondary" %} btn-{{ kind }}{% endif %}{% if size %} btn-{{ size }}{% endif %}{% if block %} btn-block{% endif %}
+{%- endmacro %}
+
+{% macro button(label, kind="secondary", type="button", size=None, block=False, icon_name=None, icon_only=False, attrs={}) -%}
+<button class="{{ _btn_class(kind, size, block) }}" type="{{ type }}"{% if icon_only %} aria-label="{{ label }}"{% endif %}{{ attrs|xmlattr }}>
+  {%- if icon_name %}{{ icon(icon_name) }}{% endif %}{% if not icon_only %}<span>{{ label }}</span>{% endif -%}
+</button>
+{%- endmacro %}
+
+{% macro link_button(label, href, kind="secondary", size=None, block=False, icon_name=None, attrs={}) -%}
+<a class="{{ _btn_class(kind, size, block) }}" href="{{ href }}"{{ attrs|xmlattr }}>
+  {%- if icon_name %}{{ icon(icon_name) }}{% endif %}<span>{{ label }}</span>
+</a>
+{%- endmacro %}
+
+{#- The big amber "start this routine" button on Home. -#}
+{% macro start(title, sub, href, attrs={}) -%}
+<a class="start" href="{{ href }}"{{ attrs|xmlattr }}>
+  <span><span class="start-title">{{ title }}</span><span class="start-sub">{{ sub }}</span></span>
+  {{ icon("play") }}
+</a>
+{%- endmacro %}
+
+{#- ---------------------------------------------------------------- forms -#}
+{#- Fields go inside ui.group(); several fields in one group get separators. -#}
+{% macro field(name, label, value="", type="text", error=None, hint=None, required=False, placeholder=None, attrs={}) -%}
+{%- set fid = attrs.get("id", "f-" ~ name) -%}
+<div class="field{% if error %} field-invalid{% endif %}">
+  <label class="field-label" for="{{ fid }}">{{ label }}</label>
+  <input class="input" id="{{ fid }}" name="{{ name }}" type="{{ type }}"{% if value is not none and type != "file" %} value="{{ value }}"{% endif %}{% if required %} required{% endif %}{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ fid }}-err"{% endif %}{{ attrs|xmlattr }}>
+  {%- if error %}<p class="field-error" id="{{ fid }}-err">{{ error }}</p>{% elif hint %}<p class="field-hint">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro textarea(name, label, value="", error=None, hint=None, placeholder=None, attrs={}) -%}
+{%- set fid = attrs.get("id", "f-" ~ name) -%}
+<div class="field{% if error %} field-invalid{% endif %}">
+  <label class="field-label" for="{{ fid }}">{{ label }}</label>
+  <textarea class="textarea" id="{{ fid }}" name="{{ name }}"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ fid }}-err"{% endif %}{{ attrs|xmlattr }}>{{ value or "" }}</textarea>
+  {%- if error %}<p class="field-error" id="{{ fid }}-err">{{ error }}</p>{% elif hint %}<p class="field-hint">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{#- options: list of (value, label) pairs -#}
+{% macro select(name, label, options, selected=None, error=None, hint=None, attrs={}) -%}
+{%- set fid = attrs.get("id", "f-" ~ name) -%}
+<div class="field{% if error %} field-invalid{% endif %}">
+  <label class="field-label" for="{{ fid }}">{{ label }}</label>
+  <select class="select" id="{{ fid }}" name="{{ name }}"{% if error %} aria-invalid="true" aria-describedby="{{ fid }}-err"{% endif %}{{ attrs|xmlattr }}>
+    {%- for value, text in options %}
+    <option value="{{ value }}"{% if value|string == selected|string %} selected{% endif %}>{{ text }}</option>
+    {%- endfor %}
+  </select>
+  {%- if error %}<p class="field-error" id="{{ fid }}-err">{{ error }}</p>{% elif hint %}<p class="field-hint">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro search(name, label, value="", placeholder="Search", attrs={}) -%}
+{%- set fid = attrs.get("id", "f-" ~ name) -%}
+<div class="search">
+  {{ icon("search") }}
+  <label class="visually-hidden" for="{{ fid }}">{{ label }}</label>
+  <input class="input" id="{{ fid }}" name="{{ name }}" type="search" value="{{ value or "" }}" placeholder="{{ placeholder }}" autocomplete="off"{{ attrs|xmlattr }}>
+</div>
+{%- endmacro %}
+
+{#- Radio-based segmented control. options: list of (value, label). -#}
+{% macro segmented(name, label, options, selected=None, attrs={}) -%}
+<div class="segmented" role="radiogroup" aria-label="{{ label }}"{{ attrs|xmlattr }}>
+  {%- for value, text in options %}
+  <input type="radio" id="seg-{{ name }}-{{ loop.index }}" name="{{ name }}" value="{{ value }}"{% if value|string == selected|string %} checked{% endif %}><label for="seg-{{ name }}-{{ loop.index }}">{{ text }}</label>
+  {%- endfor %}
+</div>
+{%- endmacro %}
+
+{#- Link-based segmented control (filters). links: list of (href, label, current_bool). -#}
+{% macro segmented_links(label, links) -%}
+<nav class="segmented" aria-label="{{ label }}">
+  {%- for href, text, current in links %}<a href="{{ href }}"{% if current %} aria-current="true"{% endif %}>{{ text }}</a>{% endfor -%}
+</nav>
+{%- endmacro %}
+
+{#- A list row with a label and an on/off switch. -#}
+{% macro switch_row(name, label, checked=False, attrs={}) -%}
+{%- set fid = attrs.get("id", "sw-" ~ name) -%}
+<div class="row">
+  <label class="row-main" for="{{ fid }}"><span class="row-title">{{ label }}</span></label>
+  <span class="switch"><input type="checkbox" role="switch" id="{{ fid }}" name="{{ name }}" value="1"{% if checked %} checked{% endif %}{{ attrs|xmlattr }}><span></span></span>
+</div>
+{%- endmacro %}
+
+{% macro range_row(name, label, value, min=0, max=1, step=0.05, attrs={}) -%}
+{%- set fid = attrs.get("id", "rg-" ~ name) -%}
+<div class="row">
+  <label class="row-main" for="{{ fid }}"><span class="row-title">{{ label }}</span></label>
+  <input class="range" type="range" id="{{ fid }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step }}" value="{{ value }}"{{ attrs|xmlattr }}>
+</div>
+{%- endmacro %}
+
+{#- − value +; the buttons carry data-step so JS can wire them. -#}
+{% macro stepper(label, value, id, steps=(-1, 1)) -%}
+<div class="stepper" role="group" aria-label="{{ label }}">
+  {{ button("Decrease " ~ label, size="small", icon_name="minus", icon_only=True, attrs={"data-step": steps[0], "data-for": id}) }}
+  <output class="stepper-value" id="{{ id }}" aria-live="polite">{{ value }}</output>
+  {{ button("Increase " ~ label, size="small", icon_name="plus", icon_only=True, attrs={"data-step": steps[1], "data-for": id}) }}
+</div>
+{%- endmacro %}
+
+{#- ---------------------------------------------------------------- feedback -#}
+{% macro alert(text, kind=None) -%}
+<p class="alert{% if kind %} alert-{{ kind }}{% endif %}" role="{{ "alert" if kind == "error" else "status" }}">{{ text }}</p>
+{%- endmacro %}
+
+{% macro badge(text, accent=False) -%}
+<span class="badge{% if accent %} badge-accent{% endif %}">{{ text }}</span>
+{%- endmacro %}
+
+{% macro empty(title, text=None, href=None, action=None, icon_name="music") -%}
+<div class="empty">
+  {{ icon(icon_name) }}
+  <p class="empty-title">{{ title }}</p>
+  {%- if text %}<p>{{ text }}</p>{% endif %}
+  {%- if href and action %}{{ link_button(action, href, kind="primary") }}{% endif %}
+</div>
+{%- endmacro %}
+
+{#- ---------------------------------------------------------------- numbers -#}
+{#- Week progress: big number, "of N min", an aside, and a native <progress>. -#}
+{% macro progress(value, max, unit="min", aside=None, label="This week") -%}
+<div class="progress">
+  <div class="progress-numbers">
+    <span class="progress-big">{{ value }} <span class="progress-of">of {{ max }} {{ unit }}</span></span>
+    {%- if aside %}<span class="progress-aside">{{ aside }}</span>{% endif %}
+  </div>
+  <progress class="bar" value="{{ [value, max]|min }}" max="{{ max if max > 0 else 1 }}" aria-label="{{ label }}: {{ value }} of {{ max }} {{ unit }}">{{ value }} of {{ max }}</progress>
+</div>
+{%- endmacro %}
+
+{% macro stat(value, label) -%}
+<div class="stat"><p class="stat-value">{{ value }}</p><p class="stat-label">{{ label }}</p></div>
+{%- endmacro %}

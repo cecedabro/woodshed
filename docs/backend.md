@@ -11,7 +11,9 @@ pgserver. Use the standard library for everything else (`hmac`, `hashlib`, `zone
 
 ## Layout (inside `backend/app/`, suggested; split a module when it passes ~300 lines)
 ```
-main.py        create_app(): settings, engine, middleware, routers. Nothing else.
+main.py        create_app(): settings, engine, middleware, routers. Nothing else (< 150 lines).
+routes/        one module per area with an APIRouter: items.py, routines.py, run.py,
+               progress.py, settings.py, media.py, tuner.py, styleguide.py
 config.py      Settings (env) + check_production()            [exists]
 db.py          make_engine, make_sessionmaker, get_db          [exists]
 models.py      SQLAlchemy models (§model)
@@ -24,6 +26,7 @@ routines.py    routine pages; sessions.py runner page + logging API
 stats.py       weekly totals, tempo history (pure functions + queries)
 takes.py       recording upload, list, compare; settings.py /settings
 pwa.py         manifest + service worker routes
+musicbrainz.py MusicBrainz search (§musicbrainz); covers.py cover art download
 ```
 
 ## App factory rules
@@ -37,7 +40,8 @@ pwa.py         manifest + service worker routes
 One migration per task that changes models. Names are fixed (the tests and later tasks use them):
 ```
 item            id, kind (song|exercise), title, artist?, status (learning|polishing|repertoire),
-                current_bpm?, original_url?, notes (text, default ''), created_at, updated_at
+                current_bpm?, original_url?, notes (text, default ''), created_at, updated_at,
+                year?, mbid? (String 36), release_group_id? (String 36), has_cover (bool, default false)
 attachment      id, item_id → item ON DELETE CASCADE, kind (tab|pdf|audio), label (default ''),
                 filename (original name), stored_name (uuid + ext), content_type, size_bytes, created_at
 routine         id, name, created_at, updated_at
@@ -50,6 +54,8 @@ take            id, item_id → item CASCADE, session_block_id? → session_bloc
                 stored_name, content_type, size_bytes, duration_seconds, bpm?, note (default ''),
                 recorded_at
 setting         key (pk, text), value (text)
+                keys: weekly_goal_minutes (default 120), theme (amp|flat|daylight, default amp),
+                tuner_a4 (430–450, default 440)
 ```
 Enums are `String` columns with a `CHECK` constraint (simpler migrations than PG enums).
 Timestamps are `DateTime(timezone=True)`. Index `session_block(ended_at)` and
@@ -77,6 +83,43 @@ models in Python, not only in the database.
 - Stale sessions (SPEC 5.7) are closed lazily: a helper `close_stale_sessions(db, now)` runs
   at the start of the home page and of `POST /api/sessions`.
 
+## §auth middleware (SPEC 2.3)
+One `LoginRequiredMiddleware` in `auth.py`, added in `create_app`. `OPEN_PATHS` and
+`OPEN_PREFIXES` (`/static/`) are module constants; everything else needs a valid cookie.
+No per-route login dependencies. HTML → 303 `/login`; paths under `/api/` → 401
+`{"detail": "Login required"}`.
+
+## §musicbrainz (SPEC 14)
+`app/musicbrainz.py`:
+```python
+@dataclass(frozen=True)
+class Candidate:
+    mbid: str; title: str; artist: str; year: int | None; length: str  # "7:12" or ""
+    release_group_id: str | None; score: int; date: str  # first-release-date or ""
+class MBUnavailable(Exception): ...
+def build_query(title: str, artist: str | None) -> str
+def parse_recordings(data: dict) -> list[Candidate]        # dedupe, sort, max 8
+Fetch = Callable[[str, dict[str, str], float], bytes]       # (url, headers, timeout) -> body
+def search(title, artist, *, fetch: Fetch, user_agent: str, limiter: RateLimiter) -> list[Candidate]
+class RateLimiter:  # 1 request/second for the whole app; wait(), using clock/sleep you pass in
+```
+The real `fetch` uses `urllib.request` (stdlib); any `URLError`, timeout, non-200 status or
+JSON with an `"error"` key raises `MBUnavailable`. The app keeps one `RateLimiter` on
+`app.state`; routes get `search` through a dependency so tests override it. Artist =
+`artist-credit` names joined with their `joinphrase`; year = first 4 digits of
+`first-release-date`; `release_group_id` from the first release; `length` from milliseconds.
+Recorded responses for tests: `tests/fixtures/mb_recording_search.json` (title + artist,
+"Texas Flood" by Stevie Ray Vaughan, many versions of one song),
+`tests/fixtures/mb_search_blackbird.json` (title only, many artists) and
+`tests/fixtures/mb_rate_limited.json` (an error body). From backend tests:
+`Path(__file__).resolve().parents[2] / "tests" / "fixtures" / name`.
+`MB_USER_AGENT` setting, default `"woodshed/0.1 ( self-hosted practice app )"`.
+
+`app/covers.py`: `fetch_cover(release_group_id, *, fetch) -> tuple[bytes, str] | None`
+(`"jpg"` for `FF D8 FF`, `"png"` for `89 50 4E 47`; anything else, > 2 MB, 404 or error →
+None) and `save_cover(item, data, ext, media_dir)`. Called after an item with a
+`release_group_id` and `has_cover = false` is saved; a failure never blocks saving.
+
 ## §stats (SPEC 7, 9)
 - Put week maths in pure functions: `week_start(local_dt) -> date` (Monday), and
   `week_bounds_utc(monday: date) -> (start_utc, end_utc)` via `zoneinfo.ZoneInfo("Europe/Amsterdam")`.
@@ -84,7 +127,8 @@ models in Python, not only in the database.
   rounded down.
 - Tempo history = per local day, `max(bpm)` of that item's blocks with a BPM.
 - Charts are inline SVG built in Python (a function returning markup, rendered with `|safe`
-  only for that trusted output). No chart library.
+  only for that trusted output). No chart library. The SVG uses the chart classes from
+  docs/design.md (`chart-bar`, `chart-goal`, …) and no colours.
 
 ## Testing
 See `docs/testing.md`. Use the fixtures in `backend/tests/conftest.py` (`client`, `db`,

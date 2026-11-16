@@ -18,7 +18,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_security.py -q
 - [x] T06: Pure cookie functions in `app/auth.py` (SPEC 2.2, docs/backend.md §auth): `sign(expiry, secret)` and `verify(cookie, secret, now)`. Write `tests/test_auth_cookie.py`: a fresh cookie verifies; wrong secret, edited expiry, edited signature, missing dot, non-numeric expiry and an expired cookie all fail.
   accept: cd backend && uv run pytest tests/test_auth_cookie.py -q
-- [~] T07: Login (SPEC 2.1, 2.3, 2.4): `GET/POST /login`, `POST /logout`, `templates/login.html`, and middleware that sends HTML routes to `/login` (303) and gives `/api/` 401 JSON without a valid cookie; open paths as SPEC 2.3. Cookie attributes per 2.2 (`Secure` only in production). In `tests/conftest.py`, make `client` log in and add `anon_client`; existing tests must still pass. Write `tests/test_login.py` (right/wrong password, cookie attributes, redirect, 401 on `/api/x`, `/healthz` open, logout clears the cookie). — skipped: $ cd backend && uv run pytest tests/test_login.py -q && cd backend && uv run pytest -q  (exit 2)
+- [~] T07: (redone as T48–T49) Login (SPEC 2.1, 2.3, 2.4): `GET/POST /login`, `POST /logout`, `templates/login.html`, and middleware that sends HTML routes to `/login` (303) and gives `/api/` 401 JSON without a valid cookie; open paths as SPEC 2.3. Cookie attributes per 2.2 (`Secure` only in production). In `tests/conftest.py`, make `client` log in and add `anon_client`; existing tests must still pass. Write `tests/test_login.py` (right/wrong password, cookie attributes, redirect, 401 on `/api/x`, `/healthz` open, logout clears the cookie). — skipped: $ cd backend && uv run pytest tests/test_login.py -q && cd backend && uv run pytest -q  (exit 2)
   accept: cd backend && uv run pytest tests/test_login.py -q && cd backend && uv run pytest -q
 - [x] T08: Login rate limit (SPEC 2.5): failed-attempt timestamps on `app.state`, time from `clock.now()`. Write `tests/test_login_ratelimit.py`: the 11th attempt inside 15 min is 429 even with the right password; after 15 min (monkeypatched clock) the right password works.
   accept: cd backend && uv run pytest tests/test_login_ratelimit.py -q
@@ -36,7 +36,7 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_attachments.py -q
 - [x] T15: `GET /media/{kind}/{id}` (SPEC 10.4) for `attachment` and `take` rows: stored content type, Range support, 404 for unknown id or kind, 401/303 when logged out. Write `tests/test_media_serving.py` (full GET bytes equal; `Range: bytes=0-3` → 206 and 4 bytes with `Content-Range`).
   accept: cd backend && uv run pytest tests/test_media_serving.py -q
-- [~] T16: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment). — skipped: $ cd backend && uv run pytest tests/test_tab_page.py -q && node --check backend/app/static/js/tab.js  (exit 1)
+- [~] T16: (redone as T78) Tab viewer (SPEC 3.6, docs/frontend.md §alphatab): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment). — skipped: $ cd backend && uv run pytest tests/test_tab_page.py -q && node --check backend/app/static/js/tab.js  (exit 1)
   accept: cd backend && uv run pytest tests/test_tab_page.py -q && node --check backend/app/static/js/tab.js
 - [x] T17: Delete item (SPEC 3.7): a confirm page `GET /items/{id}/delete` and `POST` that deletes the item, its attachment and take files, and redirects to `/library`. Write `tests/test_item_delete.py` (files gone, logged session blocks keep `item_title`).
   accept: cd backend && uv run pytest tests/test_item_delete.py -q
@@ -44,7 +44,7 @@ test fixtures, CI.
 ## Round 2: routines, runner, metronome
 - [x] T18: Routine service + pages (SPEC 4.1, 4.3): `/routines` list with total planned minutes, `/routines/new` (name only, then go to the editor), delete with confirm. Validation per 4.1. Write `tests/test_routines.py`.
   accept: cd backend && uv run pytest tests/test_routines.py -q
-- [~] T19: Routine editor (SPEC 4.2) at `/routines/{id}/edit` with HTMX: add a block (item select, minutes, optional BPM), remove, move up/down; each action returns the updated block list fragment; positions stay 0..n-1 without gaps. Write `tests/test_routine_editor.py` (move first block down twice → order; remove middle → positions renumbered; 31st block → 422). — skipped: agent made no changes
+- [~] T19: (redone as T57–T58) Routine editor (SPEC 4.2) at `/routines/{id}/edit` with HTMX: add a block (item select, minutes, optional BPM), remove, move up/down; each action returns the updated block list fragment; positions stay 0..n-1 without gaps. Write `tests/test_routine_editor.py` (move first block down twice → order; remove middle → positions renumbered; 31st block → 422). — skipped: agent made no changes
   accept: cd backend && uv run pytest tests/test_routine_editor.py -q
 - [x] T20: `static/js/timer.js` per docs/frontend.md §js. Write `tests/js/timer.test.js`: remaining and played while running, pause excludes time, resume, addSeconds(60), isDone exactly at 0, remaining never negative.
   accept: cd backend && node --test tests/js/timer.test.js
@@ -78,24 +78,101 @@ test fixtures, CI.
   accept: cd backend && uv run pytest tests/test_tempo_history.py -q
 - [x] T34: `/progress` part 2 (SPEC 7.2): table of items with a BPM in the last 90 days, first and latest BPM and "+24 bpm". Write `tests/test_progress_tempo.py` (91-day-old block excluded).
   accept: cd backend && uv run pytest tests/test_progress_tempo.py -q
+## Round 5: fixes from trying run 1 (do these first)
+- [ ] T48: Login middleware (SPEC 2.1–2.4, docs/backend.md §auth middleware): one `LoginRequiredMiddleware` in `app/auth.py`, deny by default, open paths exactly SPEC 2.3; HTML → 303 `/login`, `/api/` → 401 JSON. Remove every per-route `require_login` dependency. In `tests/conftest.py` make `client` log in (POST `/login` with the test password) and add `anon_client` (not logged in); existing tests must still pass. Write `tests/test_login.py`: right password → 303 + cookie with HttpOnly, SameSite=Lax, Path=/ and no Secure in development; wrong → 401, no cookie; anon GET `/library` → 303 to `/login`; anon GET `/api/items/1` → 401 JSON; `/healthz` open; logout clears the cookie.
+  accept: cd backend && uv run pytest tests/test_login.py -q
+- [ ] T49: Every route needs login (SPEC 2.3). Write `tests/test_auth_coverage.py`: walk `app.routes`; for every route whose path is not open per SPEC 2.3, request it with `anon_client` using its first method (path parameters filled with `1`) and assert 303 to `/login` (HTML) or 401 (`/api/`); for POST routes also assert no row was created. Remove the extra `/attachments/{id}/download` route (files are served by `/media/attachment/{id}`) and update links that used it.
+  accept: cd backend && uv run pytest tests/test_auth_coverage.py -q && ! grep -rq "attachments/{attachment_id}/download" app
+- [ ] T50: Origin check (SPEC 2.6) in `app/security.py`: compare `Origin` with `<scheme>://<Host header>` (port included when present). Write `tests/test_origin.py`: TestClient with `base_url="http://localhost:8765"` posting with `Origin: http://localhost:8765` is not 403; `Origin: http://evil.example` → 403; `base_url="https://guitar.example"` with `Origin: https://guitar.example` is not 403 and with `Origin: http://guitar.example` → 403; no Origin header → not 403; GET with a foreign Origin → not 403.
+  accept: cd backend && uv run pytest tests/test_origin.py -q
+- [ ] T51: Item title is copied by the server (SPEC 5.6): `POST /api/sessions/{id}/blocks` takes no `item_title`; the server copies the item's title; unknown `item_id` → 422. Write `tests/test_block_title.py` (stored row has the item's title even when the client sends another `item_title`; unknown item → 422 and nothing stored).
+  accept: cd backend && uv run pytest tests/test_block_title.py -q
+- [ ] T52: Timer units (docs/frontend.md §js, **Units**): `now` is milliseconds, results are seconds. Fix `static/js/timer.js` and rewrite `tests/js/timer.test.js` with realistic numbers: `start(1_000_000)`; `remaining(1_001_000) === 59` and `played(1_030_000) === 30` for 60 s; pause at +10 000, resume at +15 000 → `played(1_020_000) === 15`; `isDone` false at +59 999, true at +60 000; `addSeconds(60)` → remaining 119 right after start.
+  accept: cd backend && node --test tests/js/timer.test.js
+- [ ] T53: Metronome keeps clicking (SPEC 6.1, docs/frontend.md §js metronome): fix the `Metronome` class to keep a fixed `startTime` (see the doc) and add `onBeat(cb)`. Add tests to `tests/js/metronome.test.js` with a fake AudioContext whose `currentTime` you advance by 0.025 s per tick (call the tick directly, no real timers): 3 s at 120 BPM schedules exactly 6 clicks, 0.5 s apart, no duplicates, accent on beats 0 and 4 with 4 beats per bar; `setBpm(60)` after 1 s gives the next click 1 s after the previous one; `stop()` schedules nothing more.
+  accept: cd backend && node --test tests/js/metronome.test.js
+- [ ] T54: Runner start BPM and safe JSON (SPEC 6.2, docs/frontend.md §js runner): the route builds the blocks in Python (`item_id`, `title`, `planned_seconds`, `start_bpm` = block BPM, else item `current_bpm`, else 80) and passes `json.dumps(...)` to the template; `runner.js` and `run-page.js` read `start_bpm`. Update `tests/test_runner_page.py`: item with `current_bpm` 72 and a block without BPM → 72; block BPM 100 wins; no BPM anywhere → 80; a title `Don't "Stop" <me>` survives parsing the `data-blocks` attribute; and `tests/js/runner.test.js`: the first logged block uses `start_bpm`.
+  accept: cd backend && uv run pytest tests/test_runner_page.py -q && node --test tests/js/runner.test.js
+- [ ] T55: Runner flow test (SPEC 5.3–5.4): write `tests/js/run-flow.test.js` that drives `createRunner` with two 60 s blocks, a fake `now` in milliseconds starting at 1 700 000 000 000 and `tick()` every 250 ms: nothing is logged before 60 s; at 60 s exactly one `logBlock` with `played_seconds: 60` (an integer) and the cue once; the second block logs at 120 s; `finish` is called once; a pause of 10 s in block 1 moves its end to 70 s and does not count as played. Fix `runner.js` if it fails.
+  accept: cd backend && node --test tests/js/run-flow.test.js
+- [ ] T42: `make dev` (`backend/scripts/dev.py`): starts pgserver in `backend/.devdb/`, migrates, seeds 3 routines, 8 items (blues/rock), 10 weeks of sessions with rising BPMs, and runs uvicorn on :8000. Put the seed in a function and write `tests/test_dev_seed.py` that calls it on the test database and checks the counts; running the seed twice does not duplicate rows. Add `.devdb/` to `.gitignore`.
+  accept: cd backend && uv run pytest tests/test_dev_seed.py -q
+- [ ] T56: Split `app/main.py` (docs/backend.md layout): move routes into `app/routes/` modules with an `APIRouter` each (items, routines, run, progress, settings, media); `main.py` only builds the app. No behaviour change; all tests pass.
+  accept: cd backend && test "$(wc -l < app/main.py)" -lt 150 && test -d app/routes && uv run pytest -q
+- [ ] T57: Routine editor, add and remove (SPEC 4.2; markup later in T65): the editor lists the existing blocks (title, minutes, BPM); `POST /routines/{id}/blocks` adds (item, minutes 1–120, optional BPM 20–400), `POST /routines/{id}/blocks/{block_id}/remove` removes; both return the fragment `partials/routine_blocks.html`; positions stay 0..n−1. Write `tests/test_routine_editor.py` (existing blocks shown; add three → positions 0,1,2; remove the middle → 0,1 in order; 31st block → 422; minutes 0 → 422; a block of another routine → 404).
+  accept: cd backend && uv run pytest tests/test_routine_editor.py -q
+- [ ] T58: Routine editor, move (SPEC 4.2): `POST /routines/{id}/blocks/{block_id}/move?direction=up|down` returns the fragment. Write `tests/test_routine_move.py` (A,B,C: move A down twice → B,C,A; move C up → A,C,B; moving the first up or the last down changes nothing; bad direction → 422). Keep the unique (routine_id, position) constraint working (swap in two steps).
+  accept: cd backend && uv run pytest tests/test_routine_move.py -q
+- [ ] T78: Tab viewer (SPEC 3.6, docs/frontend.md §alphatab; redo of T16): `/items/{id}/tab/{attachment_id}` page and `static/js/tab.js`; PDF attachments link to `/media/attachment/{id}`; audio attachments get `<audio controls preload="none">`. Use the new layout (docs/design.md: page extends `base.html`, `.tab-viewer` container). Write `tests/test_tab_page.py` (alphaTab script and tab.js tags, `data-file` URL, 404 for a non-tab attachment and for an attachment of another item).
+  accept: cd backend && uv run pytest tests/test_tab_page.py -q && node --check app/static/js/tab.js
+
+## Round 6: design system (docs/design.md; the CSS and macros exist, you compose pages)
+Each migration rewrites the named templates with the recipe from docs/design.md, deletes their
+lines from `backend/tests/ui_legacy.txt`, keeps every route, form field, id and data
+attribute working, and updates assertions in existing tests that checked old markup
+(not behaviour). `tests/test_ui_rules.py` must pass.
+- [ ] T59: Theme and style guide (SPEC 12.3–12.4): setting `theme` (amp|flat|daylight, default amp), given to every template as `theme` by the one Jinja environment (a context function or global reading the setting per request); `GET /styleguide` renders `styleguide.html` (`active` none). Write `tests/test_theme.py` (default page has no `data-theme`; after setting daylight, `/` has `<html lang="en" data-theme="daylight">`; `/styleguide` → 200 logged in, 303 logged out).
+  accept: cd backend && uv run pytest tests/test_theme.py tests/test_ui_rules.py -q
+- [ ] T60: Migrate Home (`home.html`) per the recipe. Update `tests/test_home.py` where it checked old markup; add a check that the first routine is rendered with class `start` and the progress shows "of 120 min".
+  accept: cd backend && ! grep -qx "home.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_home.py tests/test_week_totals.py -q
+- [ ] T61: Migrate Library (`library.html`) per the recipe (search, kind filter as `segmented_links`, grouped rows, empty state).
+  accept: cd backend && ! grep -qx "library.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_library.py -q
+- [ ] T62: Migrate the item page (`items_detail.html`) per the recipe, including files, upload form and tempo section.
+  accept: cd backend && ! grep -qx "items_detail.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_item_page.py tests/test_attachments.py tests/test_tempo_history.py -q
+- [ ] T63: Migrate the item forms (`items_new.html`, `items_edit.html`, `items_delete.html`) per the recipe; errors still render next to the field with 422.
+  accept: cd backend && ! grep -qxE "items_(new|edit|delete).html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_item_forms.py tests/test_item_delete.py -q
+- [ ] T64: Migrate routines list, new and delete (`routines_list.html`, `routines_new.html`, `routines_delete.html`).
+  accept: cd backend && ! grep -qxE "routines_(list|new|delete).html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_routines.py -q
+- [ ] T65: Migrate the routine editor (`routines_edit.html` and `partials/routine_blocks.html`) per the recipe.
+  accept: cd backend && ! grep -qx "routines_edit.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_routine_editor.py tests/test_routine_move.py -q
+- [ ] T66: Migrate the runner (`run.html`) per the recipe and point `run-page.js` at the new ids so start, pause, skip, +1 min, BPM stepper, ±5, tap, beats per bar, metronome switch and volume work as before (`run-main` label: Start / Pause / Resume). Update `tests/test_runner_page.py` for the new markup.
+  accept: cd backend && ! grep -qx "run.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_runner_page.py tests/test_free_practice.py -q && node --check app/static/js/run-page.js
+- [ ] T79: Runner details (docs/design.md runner recipe): `#run-blocks span` get `is-done` / `is-current`; the current `#run-beats span` gets `is-on` on each click via `Metronome.onBeat` (number of spans = beats per bar); only the current block's Tab / PDF / Backing track rows are visible (`hidden` on the others); the nav bar title shows "2 of 4". Put the class/visibility decisions in a pure function in `runner-view.js` and test it in `tests/js/runner-view.test.js` (block 2 of 4 → classes `[is-done, is-current, "", ""]`; beat 5 with 4 per bar lights span 1).
+  accept: cd backend && node --test tests/js/runner-view.test.js && node --check app/static/js/run-page.js
+- [ ] T67: Migrate Progress (`progress.html`, `macros.html`): charts use the chart classes and no colours (also the SVG built in Python); `.stats` row. Delete `macros.html` if nothing uses it.
+  accept: cd backend && ! grep -qxE "progress.html|macros.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_progress_weeks.py tests/test_progress_tempo.py -q
+- [ ] T68: Migrate Settings, Login and 404 (`settings.html`, `login.html`, `404.html`) per the recipes; Settings gets the theme select (T59) and a link to `/styleguide`; login uses `bare`.
+  accept: cd backend && ! grep -qxE "settings.html|login.html|404.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_settings.py tests/test_login.py tests/test_404.py tests/test_theme.py -q
+- [ ] T69: Remove the old layout: delete `templates/legacy_base.html` and `static/style.css`, remove `legacy_base.html` from `tests/ui_legacy.txt` (it then has only comments). Nothing may reference them.
+  accept: cd backend && test ! -e app/templates/legacy_base.html && test ! -e app/static/style.css && ! grep -qv "^#" tests/ui_legacy.txt && ! grep -rq "style.css\|legacy_base" app && uv run pytest -q
+
+## Round 7: tuner (SPEC 13, docs/frontend.md pitch.js)
+- [ ] T70: `static/js/pitch.js` pure functions per the doc. Write `tests/js/pitch.test.js` with generated sine buffers (4096 samples, 44 100 Hz): each of the six STANDARD strings is detected within ±0.5 % ; 440 Hz → `{name: "A", octave: 4, cents: 0}` (cents within ±1); 446 Hz → A4 +23.4 cents (±1); with `a4 = 432` a 432 Hz tone is A4 0 cents; silence and amplitude 0.001 → null; a 110 Hz tone plus 0.6 × its 220 Hz harmonic → 110 (no octave error); 82.41 Hz → `nearestString` 0.
+  accept: cd backend && node --test tests/js/pitch.test.js
+- [ ] T71: Tuner page (SPEC 13.1, 13.4): `GET /tuner` (`active="tuner"`) per the recipe with `static/js/tuner.js` (glue per docs/frontend.md); `data-a4` from setting `tuner_a4` (default 440); six string buttons with `data-freq`. Write `tests/test_tuner_page.py` (200 logged in; `aria-current="page"` on the Tuner tab; module script `tuner.js`; six buttons with the right `data-freq` values; `data-a4="440"`).
+  accept: cd backend && uv run pytest tests/test_tuner_page.py tests/test_ui_rules.py -q && node --check app/static/js/tuner.js
+- [ ] T72: Tuner reference in Settings (SPEC 13.3): field `tuner_a4` (430–450, else 422 and nothing saved) on `/settings`; `/tuner` uses it. Add to `tests/test_settings.py`.
+  accept: cd backend && uv run pytest tests/test_settings.py tests/test_tuner_page.py -q
+
+## Round 8: songs from MusicBrainz (SPEC 14, docs/backend.md §musicbrainz)
+- [ ] T73: Item fields `year`, `mbid`, `release_group_id`, `has_cover` (SPEC 3.1, docs/backend.md §model): model, one migration, `ItemIn` validation (year 1000–2100; ids must be UUIDs), shown on the item form (recipe: year visible, ids hidden). Write `tests/test_item_mb_fields.py` (create with all four via the form and the API; bad year → 422; `mbid` "abc" → 422).
+  accept: cd backend && uv run pytest tests/test_item_mb_fields.py -q
+- [ ] T74: `app/musicbrainz.py` pure part: `Candidate`, `build_query`, `parse_recordings`. Write `tests/test_musicbrainz_parse.py` using the fixtures: Texas Flood + Stevie Ray Vaughan gives one candidate after dedupe with the earliest year and a `m:ss` length; the Blackbird fixture gives at most 8 candidates, all with title Blackbird, sorted by score then date; `build_query('Say "Hi"', None)` escapes the quotes; with an artist the query contains ` AND artist:"…"`.
+  accept: cd backend && uv run pytest tests/test_musicbrainz_parse.py -q
+- [ ] T75: `search()` and `RateLimiter` (SPEC 14.2–14.3): real fetch with `urllib.request` (not called in tests), User-Agent from setting `MB_USER_AGENT`, timeout 5 s. Write `tests/test_musicbrainz_search.py` with a fake fetch: the URL has `fmt=json`, `limit=25` and the encoded query; the User-Agent header is sent; two searches within a second make the limiter wait (fake clock and sleep record the wait); a fetch that raises, the rate-limit fixture body and invalid JSON all raise `MBUnavailable`.
+  accept: cd backend && uv run pytest tests/test_musicbrainz_search.py -q
+- [ ] T76: Find the song on `/items/new` (SPEC 14.1, 14.3; recipe "Find the song"): `GET /items/lookup?title=&artist=` returns `partials/mb_results.html`; result links pre-fill `/items/new` (title, artist, year, original link, hidden ids); empty title → empty fragment without calling MusicBrainz. The search function comes from a dependency that tests override. Write `tests/test_mb_lookup_page.py` (results rendered with prefill links; MBUnavailable → the error text and status 200; no results → "Nothing found."; `/items/new?title=X&artist=Y&year=1983&mbid=<uuid>` pre-fills the form).
+  accept: cd backend && uv run pytest tests/test_mb_lookup_page.py tests/test_ui_rules.py -q
+- [ ] T77: Cover art (SPEC 14.4, docs/backend.md covers.py): after saving an item with a `release_group_id` and no cover, fetch and store it; `GET /media/cover/{item_id}` serves it (404 when none); library rows and the item page show it. Fetch is injectable (dependency). Write `tests/test_covers.py` with a fake fetch: JPEG bytes → file on disk, `has_cover` true, served with `image/jpeg`; PNG → `.png`; HTML bytes, > 2 MB, or an exception → no cover and the item is still saved.
+  accept: cd backend && uv run pytest tests/test_covers.py -q
+
+## Round 3 (rest): takes
 - [ ] T35: Takes upload (SPEC 8.2) in `app/takes.py`: `sniff_audio(first_bytes) -> "webm"|"mp4"|"ogg"|None`, `POST /api/items/{id}/takes`. Add `MAX_TAKE_BYTES` (default 25 MB) to Settings. Write `tests/test_takes_upload.py` (each of the three formats with crafted header bytes → 201, row + file; wrong bytes → 415; declared mp4 with WebM bytes → 415; too big → 413; duration 0 and 601 → 422).
   accept: cd backend && uv run pytest tests/test_takes_upload.py -q
 - [ ] T36: `static/js/recorder.js` `pickMimeType` + glue (SPEC 8.1): one record button (on the runner and the item page) that toggles recording, shows elapsed time, stops at 600 s and uploads with the current BPM and block. Write `tests/js/recorder.test.js` (Safari-like support → `audio/mp4`; nothing supported → "").
   accept: cd backend && node --test tests/js/recorder.test.js && node --check app/static/js/recorder.js
 - [ ] T37: Takes on the item page (SPEC 8.3): newest first with local date, duration, BPM, `<audio controls preload="none">`, an HTMX one-line note, delete (row and file). Write `tests/test_takes_list.py`.
   accept: cd backend && uv run pytest tests/test_takes_list.py -q
-- [ ] T38: Compare (SPEC 8.4): checkboxes on the takes list submit to `/items/{id}/compare?a=&b=`; older take left. 404 when a take belongs to another item. Write `tests/test_compare.py`.
+- [ ] T38: Compare (SPEC 8.4): a form under the takes list with two `ui.select` fields (Take A, Take B) submits to `/items/{id}/compare?a=&b=`; older take left; the page uses the design recipes. 404 when a take belongs to another item. Write `tests/test_compare.py`.
   accept: cd backend && uv run pytest tests/test_compare.py -q
 
 ## Round 4: home-screen app, polish, release, deploy
-- [ ] T39: Icons and manifest (SPEC 10.3, docs/frontend.md §pwa): `backend/scripts/make_icons.py` (stdlib PNG writer) and the generated `static/icons/icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180); `GET /manifest.webmanifest`; head tags in `base.html`. Write `tests/test_manifest.py` (JSON fields, content type, PNG sizes read from the IHDR chunk).
+- [ ] T39: Icons and manifest (SPEC 10.3, docs/frontend.md §pwa): `backend/scripts/make_icons.py` (stdlib PNG writer) and the generated `static/icons/icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180); `GET /manifest.webmanifest`. The head tags are already in `base.html` (do not edit it). Write `tests/test_manifest.py` (JSON fields, content type, PNG sizes read from the IHDR chunk).
   accept: cd backend && uv run pytest tests/test_manifest.py -q
 - [ ] T40: `GET /sw.js` (SPEC 10.3): served from the root with a JS content type and `Service-Worker-Allowed: /`; caches only `/static/` (cache-first), everything else goes to the network; registered from `static/js/app.js`. Write `tests/test_sw.py`.
-  accept: cd backend && uv run pytest tests/test_sw.py -q && node --check backend/app/static/sw.js
+  accept: cd backend && uv run pytest tests/test_sw.py -q && node --check app/static/sw.js
 - [ ] T41: Accessibility pass (SPEC 10.2): `tests/test_a11y.py` parses every page (logged in, with seed rows) with `html.parser` and checks: one `<h1>`, every input/select/textarea has a label, every button has text or `aria-label`, `<html lang="en">`, no inline `<script>` code or `on*=` attributes. Fix what fails.
   accept: cd backend && uv run pytest tests/test_a11y.py -q
-- [ ] T42: `make dev` (`backend/scripts/dev.py`): starts pgserver in `backend/.devdb/`, migrates, seeds 3 routines, 8 items (blues/rock), 10 weeks of sessions with rising BPMs, and runs uvicorn on :8000. Put the seed in a function and write `tests/test_dev_seed.py` that calls it on the test database and checks the counts.
-  accept: cd backend && uv run pytest tests/test_dev_seed.py -q
 - [ ] T43: `backend/scripts/next_version.py` (stdlib only, SPEC 11.3): from tag names and the commit message print the next version. Write `tests/test_next_version.py` (no tags → v0.1.0; ignores non-`vX.Y.Z` tags; `[minor]` resets patch; `[major]` resets both).
   accept: cd backend && uv run pytest tests/test_next_version.py -q
 - [ ] T44: `.github/workflows/release.yml` per docs/deployment.md (on push to main; `permissions: contents: write, packages: write`; concurrency `release` without cancel; jobs `uses:` ci.yml, migrations.yml and image.yml, then build-and-push with pinned docker actions and the tag; skip on `[skip release]`).
@@ -110,5 +187,8 @@ test fixtures, CI.
 ## Later (not for the loop yet)
 - Resurface pieces not played in N days.
 - Loop a section and slow down backing tracks.
-- Watched folder on the homelab that ingests files and makes a guitar-free stem with Demucs.
+- Import inbox: a shared folder (NFS media share) whose Guitar Pro / PDF / audio files are
+  matched to items or proposed as new ones on an "Import" page, like Sonarr's manual import.
+- Guitar-free backing track from audio you own: Demucs on the PC GPU, woken like the coding model.
+- "Original recording" plays from Jellyfin (search the user's Jellyfin library by title/artist).
 - alphaTab playback (soundfont) and a cursor that follows the metronome.

@@ -7,3 +7,9 @@ Dockerfile
 .github/workflows/migrations.yml
 .github/workflows/image.yml
 backend/app/static/vendor/          # vendored by hand
+backend/app/static/css/tokens.css   # design system (docs/design.md)
+backend/app/static/css/components.css
+backend/app/templates/_ui.html
+backend/app/templates/base.html
+backend/app/templates/styleguide.html
+backend/tests/test_ui_rules.py

@@ -4,7 +4,8 @@ Server-rendered Jinja2 pages with HTMX, served by the FastAPI app. No SPA, no bu
 no npm packages. Look and feel: `docs/design.md`.
 
 ## Rules
-- Templates in `backend/app/templates/`, all extending `base.html`. Static files in
+- Templates in `backend/app/templates/`, all extending `base.html` and built from the
+  `_ui.html` macros (docs/design.md; `tests/test_ui_rules.py` checks). Static files in
   `backend/app/static/` (mounted at `/static`). Pages must render useful content without JS;
   JS adds the timer, metronome, recorder and tab rendering.
 - No inline `<script>` and no `on*=` attributes (the CSP forbids them). Pass data to JS with
@@ -35,6 +36,9 @@ export function createTimer(plannedSeconds)   // state: not started
 // isDone(now) -> remaining(now) === 0, isRunning() -> bool
 ```
 Paused time is not played time. `addSeconds(60)` is the "+1 min" button.
+**Units:** `now` is milliseconds (`Date.now()`), `plannedSeconds`, `remaining()` and `played()`
+are seconds. So `t.start(1_000_000); t.remaining(1_001_000) === 59` for a 60 s block. Tests use
+realistic millisecond values like these, never small numbers that hide a unit mix-up.
 
 `metronome.js` — scheduling maths plus a thin audio wrapper.
 ```js
@@ -50,17 +54,25 @@ The `Metronome` class uses the standard look-ahead pattern: a 25 ms `setInterval
 `beatTimes` for beats in the next 100 ms and schedules short oscillator clicks at those exact
 `audioContext.currentTime` values (1000 Hz accent, 800 Hz other beats, 30 ms). Create or
 `resume()` the `AudioContext` inside a click handler (iOS needs a user gesture).
+`start(bpm)` stores `startTime = ctx.currentTime * 1000 + 50` once; every tick calls
+`beatTimes(startTime, bpm, beatsPerBar, nextBeat, now + 100)` with that same `startTime`, so
+beat k stays at `startTime + k·60000/bpm`. `setBpm` restarts the count: new `startTime` = the
+time of the next unscheduled beat, `nextBeat = 0`. `onBeat(callback)` lets the glue light
+`.beats` (called with `{beat, accent}` from the tick that schedules it).
 
 `runner.js` — the session runner logic, pure.
 ```js
 export function createRunner(blocks, deps)
-// blocks: [{item_id, title, planned_seconds, bpm}] ; deps: {api, now, cue}
+// blocks: [{item_id, title, planned_seconds, start_bpm}] ; deps: {api, now, cue}
 // api.startSession() -> Promise<id>; api.logBlock(id, payload); api.finish(id) -> Promise<summary>
 // methods: start(), tick() (called every 250 ms by the glue), pause(), resume(), skip(),
 // addMinute(), setBpm(bpm), finish(), current() -> {index, title, remaining, bpm, paused, done}
 ```
 On `tick()` when the current timer is done: call `deps.cue()`, log the block
-(`{item_id, position, planned_seconds, played_seconds, bpm}`), start the next block's timer.
+(`{item_id, position, planned_seconds, played_seconds, bpm}`; `played_seconds` is a whole
+number), start the next block's timer at that block's `start_bpm`. The server builds
+`start_bpm` (block BPM, else the item's `current_bpm`, else 80) and the `data-blocks` JSON with
+`json.dumps`; the browser never decides the start BPM.
 `skip()` logs the block with what was played so far. After the last block, `finish()` runs
 automatically. The glue (`run-page.js`) owns the DOM, the `Metronome`, the wake lock
 (`navigator.wakeLock?.request("screen")`, re-requested on `visibilitychange`) and `fetch`.
@@ -68,6 +80,25 @@ automatically. The glue (`run-page.js`) owns the DOM, the `Metronome`, the wake 
 `recorder.js` — `export function pickMimeType(isTypeSupported)` returns the first supported of
 `audio/webm;codecs=opus`, `audio/mp4`, `audio/ogg;codecs=opus`, or `""`. The glue records with
 `MediaRecorder`, stops after 600 s, and uploads with `FormData` to `/api/items/{id}/takes`.
+
+`pitch.js` — tuner maths, pure (SPEC 13).
+```js
+export function detectPitch(samples, sampleRate)   // Float32Array -> Hz (float) or null
+export function noteFor(freq, a4 = 440)            // -> {name: "A", octave: 2, cents: -3.1, midi: 45}
+export const STANDARD = [["E2", 82.41], ["A2", 110.0], ["D3", 146.83], ["G3", 196.0], ["B3", 246.94], ["E4", 329.63]]
+export function nearestString(freq)               // -> index into STANDARD
+```
+`detectPitch`: RMS < 0.01 → null. Autocorrelation over lags for 60–1200 Hz
+(`sampleRate/1200 … sampleRate/60`), normalised; take the first peak above 0.9 × the best
+(this avoids octave errors), refine with parabolic interpolation, return `sampleRate / lag`.
+Names use sharps: C C# D D# E F F# G G# A A# B; `midi = round(69 + 12·log2(f/a4))`,
+`cents = 1200·log2(f / (a4·2^((midi−69)/12)))`. `tuner.js` (glue): `getUserMedia({audio:
+{echoCancellation: false, noiseSuppression: false, autoGainControl: false}})`, an
+`AnalyserNode` with `fftSize = 4096`, read `getFloatTimeDomainData` at most 15 times a second
+(requestAnimationFrame + time check), smooth the frequency over the last 3 readings, set the
+`--cents` property on `#tuner-meter`, toggle `is-in-tune` (|cents| ≤ 5) and `is-idle`
+(null pitch). Reference tones: an `OscillatorNode` (sine) for 2 s with a 50 ms fade in/out.
+Stop: stop all tracks, close the context; also on `visibilitychange` to hidden.
 
 ## §alphatab (SPEC 3.6)
 Tab page: `<div id="tab" data-file="/media/attachment/{id}">`, then
@@ -88,7 +119,9 @@ and keep `useWorkers: false` (workers clash with the CSP). Show a friendly messa
 
 ## §pages
 `/` home (routine buttons, week progress), `/library`, `/items/{id}` (+ `/new`, `/edit`, `/tab/…`,
-`/compare`), `/routines` (+ editor), `/run/{routine_id}`, `/progress`, `/settings`, `/login`.
+`/compare`), `/items/lookup` (fragment), `/routines` (+ editor), `/run/{routine_id}`,
+`/run/item/{id}`, `/tuner`, `/progress`, `/settings`, `/styleguide`, `/login`.
+Every page follows a recipe in `docs/design.md`.
 Route handlers stay thin: they call Python functions that return plain data, and templates only display.
 
 ## §pwa (SPEC 10.3)
