@@ -119,7 +119,7 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && ! grep -qx "library.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_library.py -q
 - [~] T62: Migrate the item page (`items_detail.html`) per the recipe, including files, upload form and tempo section. — skipped: agent made no changes
   accept: cd backend && ! grep -qx "items_detail.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_item_page.py tests/test_attachments.py tests/test_tempo_history.py -q
-- [ ] T63: Migrate the item forms (`items_new.html`, `items_edit.html`, `items_delete.html`) per the recipe; errors still render next to the field with 422.
+- [~] T63: Migrate the item forms (`items_new.html`, `items_edit.html`, `items_delete.html`) per the recipe; errors still render next to the field with 422. — skipped: $ cd backend && ! grep -qxE "items_(new|edit|delete).html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_item_forms.py tests/test_item_
   accept: cd backend && ! grep -qxE "items_(new|edit|delete).html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_item_forms.py tests/test_item_delete.py -q
 - [ ] T64: Migrate routines list, new and delete (`routines_list.html`, `routines_new.html`, `routines_delete.html`).
   accept: cd backend && ! grep -qxE "routines_(list|new|delete).html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_routines.py -q
