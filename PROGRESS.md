@@ -138,3 +138,8 @@ don't read that file, search it with `rg` if you need something.
   (GET, rate-limited 429, wrong password 401).
 - Removed both `login.html` and `404.html` from `backend/tests/ui_legacy.txt`.
 - All 446 tests pass, 98.43% coverage, `make check` clean.
+
+## Pitch detection pure module (T70)
+- Created `backend/app/static/js/pitch.js` with pure functions: `detectPitch(samples, sampleRate)` (autocorrelation with parabolic interpolation, RMS silence check at 0.01, 60–1200 Hz clamp), `noteFor(freq, a4)` (MIDI + cents calculation), `nearestString(freq)` (closest STANDARD string), and `STANDARD` array [E2=82.41, A2=110.0, D3=146.83, G3=196.0, B3=246.94, E4=329.63].
+- Created `backend/tests/js/pitch.test.js` with 28 test cases covering all 6 standard strings (±0.5% freq accuracy), note mapping (name/octave/cents/midi), 440 Hz → A4, 446 Hz → +23.4 cents, a4=432 tuning, silence/low-amplitude → null, harmonic interference (110 Hz + 0.6×220 Hz → 110 Hz), nearestString edge cases, and boundary frequencies (60 Hz, 1000 Hz).
+- All 28 node tests pass, `make check` clean (lint + mypy + pytest 98% + js + bandit + migrations).
