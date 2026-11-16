@@ -41,9 +41,7 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _admin_engine(url: str) -> Engine:
-    return create_engine(
-        make_url(url).set(database="postgres"), isolation_level="AUTOCOMMIT"
-    )
+    return create_engine(make_url(url).set(database="postgres"), isolation_level="AUTOCOMMIT")
 
 
 def _create_database(url: str) -> None:
