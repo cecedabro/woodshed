@@ -24,3 +24,11 @@ don't read that file, search it with `rg` if you need something.
 - Routine editor add/remove + the editor page in the new design.
 - Old tests that asserted old markup (raw `<input>`, `class="error"`, five nav links,
   `style.css`) now accept the new markup.
+
+## T43–T46 (by hand, 2026-11-16)
+Release + deploy drafts done outside the loop so the app can go on the cluster early.
+`backend/scripts/next_version.py` (+ tests), `.github/workflows/release.yml` (ci.yml got
+`workflow_call:` so release can reuse it), `deploy/` (app, postgres, ingress, namespace,
+kustomization, secret.example, Makefile `validate` that skips without kustomize/kubeconform).
+The homelab side (Flux ImageRepository/ImagePolicy, ExternalSecrets, NetworkPolicy, ghcr pull
+access) is done in the homelab repo.
