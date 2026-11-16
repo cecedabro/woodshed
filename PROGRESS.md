@@ -208,3 +208,8 @@ don't read that file, search it with `rg` if you need something.
 - Replaced the single join query in `backend/app/main.py` (home route) with a subquery that aggregates `routine_block` counts/minutes and the last session independently, preventing the N×M inflation bug (e.g. 3 blocks × 4 sessions → 12 blocks).
 - Created `backend/tests/test_home_counts.py` (6 tests): routine with 3 blocks and 4 sessions shows "3 blocks · 20 min"; no-block routine shows "0 blocks · 0 min"; single block/1 session; blocks with no sessions; two routines with different counts coexist correctly.
 - All 565 tests pass, 97% coverage, `make check` clean.
+
+## Item upload form always renders (T87)
+- Fixed `backend/app/templates/items_detail.html`: moved the upload form outside the `{% if item.attachments %}` block so it renders unconditionally, placing it below the empty state.
+- Created `backend/tests/test_item_upload_form.py` (9 tests): verifies form existence with zero/one/audio/pdf attachments, correct `action`, `enctype`, `type="file"`, `name="file"` attributes, and exact form count (1) regardless of attachment presence.
+- All 574 tests pass, 97% coverage, `make check` clean.

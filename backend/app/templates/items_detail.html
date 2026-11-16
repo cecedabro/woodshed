@@ -79,18 +79,18 @@
               {% endif %}
             {% endif %}
           {% endfor %}
-          <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data">
-            {% call ui.group() %}
-              {{ ui.field("file", "File", type="file") }}
-              {{ ui.field("label", "Label (optional)") }}
-            {% endcall %}
-            <div class="actions actions-end">
-              {{ ui.button("Upload", kind="primary", type="submit") }}
-            </div>
-          </form>
         {% else %}
           {{ ui.empty("No files uploaded", "Add tabs, PDFs, or backing tracks.", "", "", icon_name="files") }}
         {% endif %}
+        <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data">
+          {% call ui.group() %}
+            {{ ui.field("file", "File", type="file") }}
+            {{ ui.field("label", "Label (optional)") }}
+          {% endcall %}
+          <div class="actions actions-end">
+            {{ ui.button("Upload", kind="primary", type="submit") }}
+          </div>
+        </form>
       {% endcall %}
     </div>
     <div>
