@@ -203,3 +203,10 @@ don't read that file, search it with `rg` if you need something.
 - Updated `backend/app/routes/media.py`: added `GET /media/cover/{item_id}` route that looks up `Item.has_cover`, finds the cover file by `item_id.ext` in MEDIA_DIR/cover/, serves with correct `Content-Type` (`image/jpeg` or `image/png`), returns 404 when no cover or file missing.
 - Created `backend/tests/test_covers.py` (20 tests): magic byte detection (JPEG/PNG/HTML/empty), fetch with fake injectors (JPEG, PNG, HTML rejection, oversized, network error), save cover (JPEG, PNG, OSError return False), API item creation with/without release_group_id, form item creation/edit with release_group_id, cover serving (JPEG 200 + correct content-type, PNG 200, 404 when no cover, 404 for nonexistent item).
 - All 558 tests pass, 97% coverage, `make check` clean.
+## T43–T46 (by hand, 2026-11-16)
+Release + deploy drafts done outside the loop so the app can go on the cluster early.
+`backend/scripts/next_version.py` (+ tests), `.github/workflows/release.yml` (ci.yml got
+`workflow_call:` so release can reuse it), `deploy/` (app, postgres, ingress, namespace,
+kustomization, secret.example, Makefile `validate` that skips without kustomize/kubeconform).
+The homelab side (Flux ImageRepository/ImagePolicy, ExternalSecrets, NetworkPolicy, ghcr pull
+access) is done in the homelab repo.
