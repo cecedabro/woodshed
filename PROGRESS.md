@@ -143,3 +143,11 @@ don't read that file, search it with `rg` if you need something.
 - Created `backend/app/static/js/pitch.js` with pure functions: `detectPitch(samples, sampleRate)` (autocorrelation with parabolic interpolation, RMS silence check at 0.01, 60–1200 Hz clamp), `noteFor(freq, a4)` (MIDI + cents calculation), `nearestString(freq)` (closest STANDARD string), and `STANDARD` array [E2=82.41, A2=110.0, D3=146.83, G3=196.0, B3=246.94, E4=329.63].
 - Created `backend/tests/js/pitch.test.js` with 28 test cases covering all 6 standard strings (±0.5% freq accuracy), note mapping (name/octave/cents/midi), 440 Hz → A4, 446 Hz → +23.4 cents, a4=432 tuning, silence/low-amplitude → null, harmonic interference (110 Hz + 0.6×220 Hz → 110 Hz), nearestString edge cases, and boundary frequencies (60 Hz, 1000 Hz).
 - All 28 node tests pass, `make check` clean (lint + mypy + pytest 98% + js + bandit + migrations).
+
+## Tuner page (T71)
+- Created `backend/app/routes/tuner.py` (`GET /tuner`) fetching `tuner_a4` from DB (defaults to 440), passing `active="tuner"`, `a4`, and `strings` (STANDARD_TUNING array) to template.
+- Created `backend/app/templates/tuner.html` per the design recipe: extends `base.html`, `.stack-lg` wrapper, `data-a4="{{ tuner_a4 }}"` on root div, `#tuner-note` + `#tuner-hz` displays, `#tuner-meter` with `tuner-needle`, "Connect mic" button, six `data-freq` reference tone buttons, and loads `tuner.js` as ES module.
+- Created `backend/app/static/js/tuner.js`: mic toggle via `getUserMedia`, `setMicButton()` with loading/cancel states, pitch loop (10 fps via `requestAnimationFrame`) using `pitch.js` `detectPitch()`/`noteFor()`/`nearestString()`, meter needle update (`--cents` CSS property), reference tone playback via `OscillatorNode` (2s with linear ramp fade-out), `data-freq` button click handlers.
+- Wired router in `backend/app/routes/__init__.py` (imported `tuner_router`) and `backend/app/main.py` (mounted `app.include_router(tuner_router)`).
+- Created `backend/tests/test_tuner_page.py` (10 tests: 200 status, `aria-current="page"`, module script, six `data-freq` values, `data-a4="440"`, note/hz/meter/status/scale elements).
+- All 459 tests pass, 98% coverage, `make check` clean.
