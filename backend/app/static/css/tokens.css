@@ -1,0 +1,154 @@
+/* Woodshed design tokens: the ONLY file with raw colours, fonts and sizes.
+ *
+ * Human-owned (see docs/design.md). Components (components.css) and page layout
+ * (pages.css) use these variables only. A theme is a block that overrides some of them;
+ * the active theme is set as <html data-theme="..."> from the `theme` setting.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- colour: surfaces ---- */
+  --c-page: #100d0b;          /* behind everything (desktop margins) */
+  --c-bg: #1b1714;            /* screen background */
+  --c-group: #28211a;         /* grouped list / card background */
+  --c-group-pressed: #332a21;
+  --c-field: #16120f;         /* inputs, progress tracks */
+  --c-bar: #241e18;           /* nav bar, tab bar, sidebar */
+
+  /* ---- colour: lines ---- */
+  --c-hair: #3a3128;          /* separators */
+  --c-line: #3d3329;          /* control borders */
+  --c-chevron: #6e6253;
+
+  /* ---- colour: text ---- */
+  --c-text: #f2e8d5;
+  --c-dim: #a89880;           /* secondary text, 6:1 on --c-bg */
+  --c-faint: #7d705f;         /* placeholders only (not for real text) */
+
+  /* ---- colour: accents ---- */
+  --c-accent: #e8a33a;        /* amber pilot light */
+  --c-accent-hi: #f2b955;     /* top of gloss gradient */
+  --c-accent-lo: #cf8a24;     /* bottom of gloss gradient */
+  --c-accent-edge: #b97a1f;   /* border of accent controls */
+  --c-on-accent: #1b1714;     /* text on accent */
+  --c-ok: #7fb59f;            /* in tune, saved */
+  --c-danger: #e5735a;        /* record, delete */
+  --c-on-danger: #1b1714;
+  --c-focus: #f2b955;
+  --c-knob: #f7f1e6;          /* switch knob */
+
+  /* ---- gloss (classic iOS feel). The flat theme turns these off. ---- */
+  --g-bar: linear-gradient(#332a21, #241e18);
+  --g-bar-highlight: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --g-accent: linear-gradient(var(--c-accent-hi), var(--c-accent) 55%, var(--c-accent-lo));
+  --g-button: linear-gradient(#3a3027, #2a231c);
+  --g-danger: linear-gradient(#ef8a73, var(--c-danger) 55%, #c95a42);
+  --sh-button: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 1px 2px rgb(0 0 0 / 0.5);
+  --sh-inset: inset 0 1px 3px rgb(0 0 0 / 0.6);
+  --sh-knob: 0 2px 4px rgb(0 0 0 / 0.4);
+  --sh-raised: 0 8px 24px rgb(0 0 0 / 0.35);
+
+  /* ---- type ---- */
+  --font: "Helvetica Neue", Helvetica, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --fs-tiny: 0.6875rem;       /* 11px: tab labels, chart labels */
+  --fs-caption: 0.8125rem;    /* 13px: section headers, sub-lines */
+  --fs-small: 0.875rem;       /* 14px */
+  --fs-body: 1.0625rem;       /* 17px: list rows, buttons (iOS body) */
+  --fs-title: 1.3125rem;      /* 21px */
+  --fs-large: 1.75rem;        /* 28px: big numbers */
+  --fs-display: 4.75rem;      /* 76px: runner countdown */
+  --fs-tuner: 3.5rem;         /* 56px: tuner note */
+  --fw-regular: 400;
+  --fw-light: 300;
+  --fw-bold: 700;
+  --ls-caps: 0.03em;
+
+  /* ---- space (4px grid) ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;                /* side margin, row padding */
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 28px;                /* between sections */
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+
+  /* ---- size ---- */
+  --h-row: 56px;              /* list row min height */
+  --h-row-compact: 48px;
+  --h-control: 48px;          /* minimum touch target */
+  --h-big: 76px;              /* big start button */
+  --h-bar: 52px;              /* nav bar */
+  --h-tabbar: 64px;
+  --w-content: 760px;         /* max content width on desktop */
+  --w-sidebar: 232px;
+  --w-switch: 51px;
+  --h-switch: 31px;
+  --w-progress: 10px;         /* progress bar thickness */
+
+  /* ---- radius ---- */
+  --r-group: 12px;
+  --r-control: 8px;
+  --r-pill: 999px;
+
+  /* ---- motion ---- */
+  --t-fast: 120ms;
+  --t-needle: 90ms;
+}
+
+/* Flat: same colours, no gloss. */
+:root[data-theme="flat"] {
+  --g-bar: var(--c-bar);
+  --g-bar-highlight: none;
+  --g-accent: var(--c-accent);
+  --g-button: var(--c-group);
+  --g-danger: var(--c-danger);
+  --sh-button: none;
+  --sh-inset: none;
+  --sh-raised: none;
+}
+
+/* Daylight: the same feel in light colours, for the Mac during the day. */
+:root[data-theme="daylight"] {
+  color-scheme: light;
+  --c-page: #e6e1d8;
+  --c-bg: #f2efe9;
+  --c-group: #ffffff;
+  --c-group-pressed: #ece7de;
+  --c-field: #e9e4da;
+  --c-bar: #f7f5f1;
+  --c-hair: #d8d1c4;
+  --c-line: #c9c0b1;
+  --c-chevron: #a99e8c;
+  --c-text: #231e19;
+  --c-dim: #6b6152;
+  --c-faint: #998e7e;
+  --c-accent: #9a5a06;
+  --c-accent-hi: #b8740f;
+  --c-accent-lo: #82490a;
+  --c-accent-edge: #7a4405;
+  --c-on-accent: #ffffff;
+  --c-ok: #2f7a5f;
+  --c-danger: #b8432b;
+  --c-on-danger: #ffffff;
+  --c-focus: #9a5a06;
+  --c-knob: #ffffff;
+  --g-bar: linear-gradient(#fbfaf8, #efebe4);
+  --g-bar-highlight: inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --g-button: linear-gradient(#ffffff, #f0ece5);
+  --g-danger: linear-gradient(#cc5a41, var(--c-danger) 55%, #9e3520);
+  --sh-button: inset 0 1px 0 rgb(255 255 255 / 0.8), 0 1px 2px rgb(0 0 0 / 0.15);
+  --sh-inset: inset 0 1px 3px rgb(0 0 0 / 0.15);
+  --sh-knob: 0 2px 4px rgb(0 0 0 / 0.25);
+  --sh-raised: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-needle: 0ms;
+  }
+}

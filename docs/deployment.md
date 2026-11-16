@@ -5,6 +5,10 @@ builds the image and keeps *draft* manifests in `deploy/`; the homelab chat copi
 `homelab/apps/woodshed/` and adds the NetworkPolicy, ExternalSecrets and Ingress. You never
 touch the cluster or the homelab repo.
 
+Outbound traffic the app needs (for the homelab NetworkPolicy): HTTPS (443) to
+`musicbrainz.org`, `coverartarchive.org` and `archive.org` (cover art redirects there).
+Nothing else leaves the cluster.
+
 ## Human-owned checks (do not edit)
 | File | What |
 | --- | --- |

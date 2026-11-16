@@ -23,18 +23,23 @@ Times are stored in UTC. "Local" means Europe/Amsterdam. A week runs Monday
       A tampered, malformed or expired cookie counts as logged out.
 - 2.3 Without a valid session, HTML routes redirect 303 to `/login` and `/api/` routes
       return 401 JSON. Open without login: `/login`, `/healthz`, `/readyz`, `/static/…`,
-      `/manifest.webmanifest`, `/sw.js`.
+      `/manifest.webmanifest`, `/sw.js`. One middleware enforces this, deny by default:
+      a new route needs a login unless it is added to that list.
 - 2.4 `POST /logout` clears the cookie and redirects 303 to `/login`.
 - 2.5 After 10 failed logins within 15 minutes (whole app, not per client), `POST /login`
       returns 429 until the window passes, even with the right password.
 - 2.6 Requests with a method other than GET/HEAD whose `Origin` header is present and
-      does not match the request's own scheme+host get 403.
+      is not exactly `<scheme>://<Host header>` get 403. The Host header includes the port
+      when there is one (`http://localhost:8000`); behind Traefik the scheme is `https`
+      (uvicorn runs with `--proxy-headers`).
 
 ## 3. Library
 - 3.1 An item has: `kind` (`song` | `exercise`), `title` (1–200 chars), `artist` (optional),
       `status` (`learning` | `polishing` | `repertoire`, default `learning`), `current_bpm`
       (optional, 20–400), `original_url` (optional, must start with `http://` or `https://`),
       `notes` (optional Markdown-free plain text, max 20 000 chars), `created_at`, `updated_at`.
+      From MusicBrainz (SPEC 14), all optional: `year` (1000–2100), `mbid` and
+      `release_group_id` (UUIDs), `has_cover` (default false).
 - 3.2 `/library` lists items grouped by status, each linking to `/items/{id}`; a filter
       `?kind=song|exercise` and a title search `?q=` (case-insensitive substring).
 - 3.3 `/items/new` and `/items/{id}/edit` create and edit items with server-side
@@ -78,7 +83,8 @@ Times are stored in UTC. "Local" means Europe/Amsterdam. A week runs Monday
       Only time actually counted (not paused) is logged as `played_seconds`.
 - 5.5 `played_seconds` is clamped to 0 … (seconds since the session started + 60). A block
       with `played_seconds` < 10 is not stored (returns 200 `{"stored": false}`).
-- 5.6 A session block keeps the item id and a copy of the item title. When it is stored
+- 5.6 A session block keeps the item id and a copy of the item title, copied by the server
+      from the item (the client sends only `item_id`; an unknown `item_id` gives 422). When it is stored
       with a BPM, the item's `current_bpm` becomes that BPM.
 - 5.7 A session left unfinished for 6 hours counts as finished at its last block's end time.
 - 5.8 Free practice: `/items/{id}` has a "Practise this" button that runs a one-block
@@ -88,6 +94,8 @@ Times are stored in UTC. "Local" means Europe/Amsterdam. A week runs Monday
 ## 6. Metronome (browser)
 - 6.1 Web Audio clicks scheduled ahead of time (look-ahead scheduler), so timing does not
       drift when the main thread is busy. Accent on beat 1; beats per bar 2–7 (default 4).
+      Beat k is at `start + k × 60/BPM`, where `start` is fixed when the metronome starts or
+      the BPM changes; it keeps clicking until stopped.
 - 6.2 BPM 20–400; −5/−1/+1/+5 buttons and tap tempo (average of the last 4 taps; a gap
       over 2 s restarts tapping). The start BPM of a block is the block's BPM, else the item's
       `current_bpm`, else 80. The BPM logged is the one in use when the block ends.
@@ -125,15 +133,18 @@ Times are stored in UTC. "Local" means Europe/Amsterdam. A week runs Monday
       weeks are handled.
 
 ## 10. Pages, PWA and security
-- 10.1 Every page extends one layout with nav: Home `/`, Library `/library`, Routines
-       `/routines`, Progress `/progress`, Settings `/settings`; the current one has `aria-current="page"`.
+- 10.1 Every page extends one layout (`base.html`, see SPEC 12) with nav: Home `/`, Library
+       `/library`, Routines `/routines`, Tuner `/tuner`, Progress `/progress`, and Settings
+       `/settings` (sidebar on wide screens, gear button on Home on phones); the current one
+       has `aria-current="page"`. The nav bar title is the page's only `<h1>`.
 - 10.2 Usable at 360 px wide (no horizontal scroll) and on an iPad on a music stand: the
        runner's timer and BPM are readable from 1.5 m and its buttons are ≥ 48 px.
 - 10.3 `GET /manifest.webmanifest` (`application/manifest+json`): name "Woodshed",
        `display: standalone`, `start_url: /`, theme colour, icons 192 and 512 px PNG plus
        `apple-touch-icon` 180 px. `GET /sw.js` is a service worker that caches only `/static/`
        files (never pages, API responses or media).
-- 10.4 Media files are served only to a logged-in user through `/media/{kind}/{id}`, with
+- 10.4 Media files are served only to a logged-in user through `/media/{kind}/{id}`
+       (`kind` is `attachment`, `take` or `cover`; for `cover` the id is the item id), with
        the stored content type and HTTP Range support (206 for a range request), so audio
        seeking works in Safari.
 - 10.5 Every response has `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`,
@@ -154,3 +165,50 @@ Times are stored in UTC. "Local" means Europe/Amsterdam. A week runs Monday
 - 11.5 The migration check (`migrations.yml`, `tests/ci/check-migrations.sh`, human-owned) passes.
 - 11.6 `deploy/` holds draft Kustomize manifests (namespace `woodshed`) that pass
        `kustomize build | kubeconform -strict`; see `docs/deployment.md`.
+
+## 12. Look and design system
+- 12.1 Classic-iOS look in the valve-amp colours: a nav bar on top, grouped rounded lists with
+       thin separators and chevrons, segmented controls and switches, a tab bar at the bottom
+       on phones and a sidebar on screens ≥ 900 px (Mac, iPad landscape). docs/design.md has
+       the components and a recipe per page.
+- 12.2 All colours, fonts and sizes live in `static/css/tokens.css`. Components live in
+       `static/css/components.css` and `templates/_ui.html` (macros). Pages use the macros;
+       page layout extras go in `static/css/pages.css` using tokens only.
+       `tests/test_ui_rules.py` enforces this.
+- 12.3 Themes `amp` (default), `flat` (no gloss) and `daylight` (light). Chosen in Settings
+       (setting `theme`), applied on every page as `<html data-theme="…">` (none for `amp`).
+- 12.4 `/styleguide` (logged in) shows every component in the current theme.
+
+## 13. Tuner
+- 13.1 `/tuner`: a "Start tuner" button asks for the microphone. Then it shows the detected
+       note with octave (e.g. A₂), the frequency, and a needle from −50 to +50 cents. Within
+       ±5 cents it shows "In tune" in the `ok` colour. "Stop" (and hiding the page) releases
+       the microphone. Before start, and on silence, it says "Play a string".
+- 13.2 Pitch detection runs in the browser only (autocorrelation on Web Audio time-domain
+       samples, 60–1200 Hz). Nothing is recorded, stored or uploaded.
+- 13.3 Reference A4 is 440 Hz by default, 430–450 in Settings (setting `tuner_a4`).
+- 13.4 Six buttons for standard tuning (E2 A2 D3 G3 B3 E4) play a 2-second reference tone
+       for that string; the string nearest to the detected pitch is highlighted.
+
+## 14. Adding songs from MusicBrainz
+- 14.1 `/items/new` starts with "Find the song": Title and Artist (optional) fields. Searching
+       (on submit, and 500 ms after typing stops) loads up to 8 results without leaving the
+       page: title, artist, year, length (m:ss). Each result links to `/items/new` with the
+       form pre-filled (kind song, title, artist, year, original link
+       `https://musicbrainz.org/recording/<mbid>`, plus hidden `mbid` and `release_group_id`).
+       "Not listed? Fill it in yourself" is always there.
+- 14.2 The server asks `https://musicbrainz.org/ws/2/recording` (`fmt=json`, `limit=25`) with
+       query `recording:"<title>"` plus ` AND artist:"<artist>"` when given (quotes and
+       backslashes escaped), the User-Agent from `MB_USER_AGENT`, a 5 s timeout, and at most
+       one request per second for the whole app (it waits rather than fails). Results are
+       deduplicated on (title, artist) ignoring case, keeping the earliest first-release date;
+       sorted by score, then date; first 8 shown.
+- 14.3 When MusicBrainz fails or is slow, the results area says "MusicBrainz didn't answer.
+       Fill in the song yourself." and the form still works. No results: "Nothing found."
+- 14.4 Saving an item with a `release_group_id` and no cover fetches
+       `https://coverartarchive.org/release-group/<id>/front-250` (5 s timeout, redirects
+       followed, max 2 MB, must be JPEG or PNG by magic bytes; anything else means no cover),
+       stores it as `MEDIA_DIR/covers/<item_id>.<ext>` and serves it at
+       `/media/cover/<item_id>`. Library rows and the item page show it; without a cover they
+       show nothing extra.
+- 14.5 Only song metadata and cover art are fetched: never tabs, audio or lyrics.

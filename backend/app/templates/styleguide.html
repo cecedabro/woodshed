@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{#- Every component, for checking a theme at a glance. Served at /styleguide.
+    Also the reference for how pages are composed (docs/design.md). -#}
+{% block title %}Style guide{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Home", "/", back=True) }}{% endblock %}
+{% block nav_right %}{{ ui.nav_link("Settings", "/settings", icon_name="settings") }}{% endblock %}
+{% block content %}
+
+{% call ui.section("This week", footer="Mon–Sun. No streaks, just minutes.") %}
+  {% call ui.group(pad=True) %}{{ ui.progress(75, 120, aside="45 to go") }}{% endcall %}
+{% endcall %}
+
+{% call ui.section("Start practising") %}
+  <div class="stack">
+    {{ ui.start("Evening 30", "4 blocks · 30 min", "#") }}
+    {% call ui.group() %}
+      {{ ui.row("Quick warm-up", sub="2 blocks · 7 min", href="#") }}
+      {{ ui.row("Practise one song…", href="#", tone="accent") }}
+    {% endcall %}
+  </div>
+{% endcall %}
+
+{% call ui.section("Library rows") %}
+  <div class="stack">
+    {{ ui.search("q", "Search the library", placeholder="Search songs and exercises") }}
+    {{ ui.segmented_links("Kind", [("#", "All", True), ("#", "Songs", False), ("#", "Exercises", False)]) }}
+    {% call ui.group() %}
+      {{ ui.row("Texas Flood", sub="Stevie Ray Vaughan", value="60 bpm", href="#") }}
+      {{ ui.row("Little Wing", sub="Jimi Hendrix", value="55 bpm", href="#") }}
+      {{ ui.row("Pentatonic box 1–5", sub="Exercise", value="110 bpm", href="#") }}
+    {% endcall %}
+  </div>
+{% endcall %}
+
+{% call ui.section("Form", footer="Errors show under the field.") %}
+  {% call ui.group() %}
+    {{ ui.field("title", "Title", "Blackbird", required=True) }}
+    {{ ui.field("artist", "Artist", "") }}
+    {{ ui.select("status", "Status", [("learning", "Learning"), ("polishing", "Polishing"), ("repertoire", "Repertoire")], selected="polishing") }}
+    {{ ui.field("current_bpm", "Current BPM", "401", type="number", error="Between 20 and 400.") }}
+    {{ ui.textarea("notes", "Notes", "Watch the thumb on the bass notes.") }}
+  {% endcall %}
+  <div class="actions actions-end">
+    {{ ui.link_button("Cancel", "#", kind="ghost") }}
+    {{ ui.button("Save", kind="primary", type="submit") }}
+  </div>
+{% endcall %}
+
+{% call ui.section("Controls") %}
+  {% call ui.group() %}
+    {% call ui.row("Tempo", chevron_=False) %}{{ ui.stepper("tempo", 100, "sg-bpm", steps=(-5, 5)) }}{% endcall %}
+    {% call ui.row("Beats", chevron_=False) %}{{ ui.segmented("beats", "Beats per bar", [(2, "2"), (3, "3"), (4, "4"), (6, "6")], selected=4) }}{% endcall %}
+    {{ ui.switch_row("metronome", "Metronome", checked=True) }}
+    {{ ui.range_row("volume", "Volume", 0.7) }}
+  {% endcall %}
+{% endcall %}
+
+{% call ui.section("Runner") %}
+  <div class="stack-lg">
+    <div class="blocks" aria-hidden="true"><span class="is-done"></span><span class="is-current"></span><span></span><span></span></div>
+    <div class="runner-head"><p class="runner-title">Pentatonic box 1–5</p><p class="runner-sub">Exercise · learning</p></div>
+    <div class="countdown">
+      <p class="countdown-time">7:42</p>
+      <progress class="bar" value="462" max="600" aria-label="Block time left">7:42</progress>
+      <p class="countdown-note">of 10:00 · up next: Blackbird</p>
+    </div>
+    <div class="beats" aria-hidden="true"><span class="is-on"></span><span></span><span></span><span></span></div>
+    <div class="actions-split">
+      {{ ui.button("+1 min") }}
+      {{ ui.button("Pause", kind="primary", icon_name="pause") }}
+      {{ ui.button("Skip", icon_name="skip") }}
+    </div>
+    {{ ui.button("Record a take", kind="outline-danger", block=True, icon_name="record") }}
+  </div>
+{% endcall %}
+
+{% call ui.section("Tuner") %}
+  <div class="tuner">
+    <p class="tuner-note">A<sub>2</sub></p>
+    <p class="tuner-hz">110.4 Hz</p>
+    <div class="tuner-meter is-in-tune" aria-hidden="true"><span class="tuner-needle"></span></div>
+    <div class="tuner-scale" aria-hidden="true"><span>−50</span><span>0</span><span>+50</span></div>
+    <p class="tuner-status is-in-tune" aria-live="polite">In tune</p>
+  </div>
+{% endcall %}
+
+{% call ui.section("Feedback") %}
+  <div class="stack">
+    {{ ui.alert("Saved.", kind="ok") }}
+    {{ ui.alert("MusicBrainz didn't answer. Fill in the song by hand.", kind="error") }}
+    <div class="cluster">{{ ui.badge("Song") }}{{ ui.badge("Learning", accent=True) }}</div>
+    <div class="stats">{{ ui.stat("75 min", "this week") }}{{ ui.stat("+24 bpm", "Blackbird, 90 days") }}</div>
+    {% call ui.group() %}{{ ui.empty("No routines yet", "A routine is a list of blocks: what to play and for how long.", "#", "New routine") }}{% endcall %}
+  </div>
+{% endcall %}
+
+{% call ui.section("Buttons") %}
+  <div class="cluster">
+    {{ ui.button("Primary", kind="primary") }}
+    {{ ui.button("Secondary") }}
+    {{ ui.button("Delete", kind="danger") }}
+    {{ ui.button("Ghost", kind="ghost") }}
+    {{ ui.button("Small", size="small") }}
+    {{ ui.button("Add", icon_name="plus", icon_only=True) }}
+  </div>
+{% endcall %}
+
+{% endblock %}

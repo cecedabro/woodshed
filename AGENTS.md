@@ -68,9 +68,15 @@ So: **run the accept command and `make check` yourself before you stop, and fix 
 - Times are UTC in code and storage; pages show Europe/Amsterdam.
 - One user. Login is a password + signed cookie (SPEC §2); no user table.
 
-## You decide (design freedom)
-Visual design within `docs/design.md`, internal module structure inside `backend/app/`,
-names of functions and CSS classes, wording on pages.
+## Design system (not your call)
+The look is fixed: `docs/design.md` has the components (`templates/_ui.html` macros,
+`static/css/components.css`, `static/css/tokens.css`) and a recipe for every page. Compose
+pages from the macros; extra layout goes in `static/css/pages.css` with tokens only.
+`backend/tests/test_ui_rules.py` checks this. Never edit the design files listed as human-owned.
+
+## You decide
+Internal module structure inside `backend/app/`, names of functions, wording on pages
+where the recipe leaves it open.
 
 ## Commands
 - `make setup` — `uv sync` (Python 3.12 is downloaded by uv if missing).

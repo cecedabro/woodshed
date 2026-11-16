@@ -1,23 +1,51 @@
+{% import "_ui.html" as ui %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"{% if theme and theme != "amp" %} data-theme="{{ theme }}"{% endif %}>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Woodshed{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{% block title %}Woodshed{% endblock %} · Woodshed</title>
+    <link rel="stylesheet" href="/static/css/tokens.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/pages.css">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#241e18">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="nav">
-        <a href="/" {% if active == "home" %}aria-current="page"{% endif %}>Home</a>
-        <a href="/library" {% if active == "library" %}aria-current="page"{% endif %}>Library</a>
-        <a href="/routines" {% if active == "routines" %}aria-current="page"{% endif %}>Routines</a>
-        <a href="/progress" {% if active == "progress" %}aria-current="page"{% endif %}>Progress</a>
-        <a href="/settings" {% if active == "settings" %}aria-current="page"{% endif %}>Settings</a>
+{#- Set `bare = True` in a page (login, errors before login) to hide the tab bar/sidebar. -#}
+<div class="app{% if bare %} app-bare{% endif %}">
+    {%- if not bare %}
+    <nav class="tabbar" aria-label="Main">
+        <span class="sidebar-brand">Woodshed</span>
+        {%- set tabs = [
+            ("home", "/", "Home", "home"),
+            ("library", "/library", "Library", "library"),
+            ("routines", "/routines", "Routines", "routines"),
+            ("tuner", "/tuner", "Tuner", "tuner"),
+            ("progress", "/progress", "Progress", "progress"),
+        ] %}
+        {%- for key, href, label, icon_name in tabs %}
+        <a class="tab" href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}>{{ ui.icon(icon_name) }}<span>{{ label }}</span></a>
+        {%- endfor %}
+        <a class="tab tab-desktop-only tab-push" href="/settings"{% if active == "settings" %} aria-current="page"{% endif %}>{{ ui.icon("settings") }}<span>Settings</span></a>
     </nav>
+    {%- endif %}
+    <header class="navbar">
+        <div class="navbar-left">{% block nav_left %}{% endblock %}</div>
+        <h1 class="navbar-title">{% block nav_title %}{{ self.title() }}{% endblock %}</h1>
+        <div class="navbar-right">{% block nav_right %}{% endblock %}</div>
+    </header>
     <main class="main">
-        {% block content %}{% endblock %}
+        <div class="content{% block content_class %}{% endblock %}">
+            {% block content %}{% endblock %}
+        </div>
     </main>
-    <script src="/static/vendor/htmx.min.js"></script>
+</div>
+<script src="/static/vendor/htmx.min.js"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>
