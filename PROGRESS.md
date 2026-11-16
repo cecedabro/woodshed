@@ -166,3 +166,8 @@ don't read that file, search it with `rg` if you need something.
 - Added `year` visible `<input type="number">` in `partials/item_fields.html` (Practice section); `mbid`/`release_group_id` are hidden.
 - Created `backend/tests/test_item_mb_fields.py` (27 tests): form rendering, API creation with all fields, year boundary/validation, mbid/release_group_id UUID validation, edit form population, API response fields.
 - All 497 tests pass, 98.35% coverage, `make check` clean.
+
+## MusicBrainz pure parsing module (T74)
+- Created `backend/app/musicbrainz.py` with `Candidate` dataclass (frozen, immutable), `build_query()` (escapes backslashes and double-quotes, appends `AND artist:"…"` only when artist is not None), and `parse_recordings()` (extracts artist from artist-credit with joinphrase, first-release-date, length in m:ss, release-group-id; dedupes by (title, artist) case-insensitive keeping earliest date, sorts by score desc then date asc, limits to 8).
+- Created `backend/tests/test_musicbrainz_parse.py` (12 tests): Texas Flood fixture dedup (1 candidate, earliest year "1990", length "5:44"), Blackbird fixture (≤8 candidates, all titled "Blackbird", sorted by score then date), `build_query` quote escaping and artist clause presence, `build_query` no-artist case, backslash escaping, Candidate immutability.
+- All 509 tests pass, 98.34% coverage, `make check` clean.
