@@ -377,3 +377,10 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   `await Promise.resolve()` before first tick.
 - `make check` passes (ruff, mypy, pytest 98.5%, jscheck, bandit).
 
+
+## Route extraction (2026-11-16)
+- Split `backend/app/main.py` routes into `backend/app/routes/` modules: `items.py`, `routines.py`, `run.py`, `progress.py`, `settings.py`, `media.py`. Created `routes/__init__.py` aggregating all routers.
+- `main.py` reduced from 380+ lines to 141 lines, importing routers from `app.routes` (and `app.api`, `app.sessions`), including them, and retaining app initialization, middleware, static files, and 404 handler.
+- Key fix: `item_forms.py` route handlers are async; wrapper routes in `items.py` must be async and `await` them. FastAPI route ordering matters — `/items/new` must be registered before `/items/{item_id}` to avoid `{item_id}` catching "new" first.
+- `/attachments/{id}/download` is public (no login); `/media/{kind}/{id}` requires `require_login`. Both were correctly separated in `media.py`.
+- `make check` passes (358 tests, 99% coverage, ruff, mypy, jscheck, bandit, migration checks).

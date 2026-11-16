@@ -97,7 +97,7 @@ test fixtures, CI.
   accept: cd backend && node --test tests/js/run-flow.test.js
 - [x] T42: `make dev` (`backend/scripts/dev.py`): starts pgserver in `backend/.devdb/`, migrates, seeds 3 routines, 8 items (blues/rock), 10 weeks of sessions with rising BPMs, and runs uvicorn on :8000. Put the seed in a function and write `tests/test_dev_seed.py` that calls it on the test database and checks the counts; running the seed twice does not duplicate rows. Add `.devdb/` to `.gitignore`.
   accept: cd backend && uv run pytest tests/test_dev_seed.py -q
-- [ ] T56: Split `app/main.py` (docs/backend.md layout): move routes into `app/routes/` modules with an `APIRouter` each (items, routines, run, progress, settings, media); `main.py` only builds the app. No behaviour change; all tests pass.
+- [x] T56: Split `app/main.py` (docs/backend.md layout): move routes into `app/routes/` modules with an `APIRouter` each (items, routines, run, progress, settings, media); `main.py` only builds the app. No behaviour change; all tests pass.
   accept: cd backend && test "$(wc -l < app/main.py)" -lt 150 && test -d app/routes && uv run pytest -q
 - [ ] T57: Routine editor, add and remove (SPEC 4.2; markup later in T65): the editor lists the existing blocks (title, minutes, BPM); `POST /routines/{id}/blocks` adds (item, minutes 1–120, optional BPM 20–400), `POST /routines/{id}/blocks/{block_id}/remove` removes; both return the fragment `partials/routine_blocks.html`; positions stay 0..n−1. Write `tests/test_routine_editor.py` (existing blocks shown; add three → positions 0,1,2; remove the middle → 0,1 in order; 31st block → 422; minutes 0 → 422; a block of another routine → 404).
   accept: cd backend && uv run pytest tests/test_routine_editor.py -q
