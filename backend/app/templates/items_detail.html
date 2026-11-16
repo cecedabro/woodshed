@@ -53,15 +53,41 @@
           {% for kind in ["tab", "pdf", "audio"] %}
             {% set group = item.attachments|selectattr("kind", "equalto", kind)|list %}
             {% if group %}
-              {% call ui.group() %}
-                <h3>{{ kind|capitalize }}</h3>
-                {% for att in group %}
-                  {{ ui.row(att.label or att.original_name, value=att.size_bytes ~ " bytes",
-                            href="/media/attachment/" ~ att.id) }}
-                {% endfor %}
-              {% endcall %}
+              {% if kind == "audio" %}
+                {% call ui.group(pad=True) %}
+                  {% for att in group %}
+                    <audio class="audio" controls preload="none">
+                      <source src="/media/attachment/{{ att.id }}" type="{{ att.content_type }}">
+                    </audio>
+                    <form method="post" action="/items/{{ item.id }}/attachments/{{ att.id }}/_delete" class="remove-form">
+                      {{ ui.button("Remove", kind="secondary", type="submit", size="small", icon_name="trash", attrs={"aria-label": "Remove file"}) }}
+                    </form>
+                  {% endfor %}
+                {% endcall %}
+              {% else %}
+                {% call ui.group() %}
+                  <h3>{{ kind|capitalize }}</h3>
+                  {% for att in group %}
+                    {% set row_href = "/items/" ~ item.id ~ "/tab/" ~ att.id if kind == "tab" else "/media/attachment/" ~ att.id %}
+                    {{ ui.row(att.label or att.original_name, value=att.size_bytes ~ " bytes",
+                              href=row_href) }}
+                    <form method="post" action="/items/{{ item.id }}/attachments/{{ att.id }}/_delete" class="remove-form">
+                      {{ ui.button("Remove", kind="secondary", type="submit", size="small", icon_name="trash", attrs={"aria-label": "Remove file"}) }}
+                    </form>
+                  {% endfor %}
+                {% endcall %}
+              {% endif %}
             {% endif %}
           {% endfor %}
+          <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data">
+            {% call ui.group() %}
+              {{ ui.field("file", "File", type="file") }}
+              {{ ui.field("label", "Label (optional)") }}
+            {% endcall %}
+            <div class="actions actions-end">
+              {{ ui.button("Upload", kind="primary", type="submit") }}
+            </div>
+          </form>
         {% else %}
           {{ ui.empty("No files uploaded", "Add tabs, PDFs, or backing tracks.", "", "", icon_name="files") }}
         {% endif %}

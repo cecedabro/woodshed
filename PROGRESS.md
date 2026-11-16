@@ -47,3 +47,16 @@ don't read that file, search it with `rg` if you need something.
   link regex from `<a\s+href=...>` to `<a[^>]*href=...>` to match row macro output.
 - Removed `items_detail.html` from `backend/tests/ui_legacy.txt`.
 - All 411 tests pass, 99% coverage, `make check` clean.
+
+## Item page part 2: Files section and upload form (T80)
+- Updated Files section in `items_detail.html`: tab rows link to `/items/{id}/tab/{att}` (was
+  all to `/media/attachment/`), audio uses `<audio class="audio" controls preload="none">` in
+  a padded group (not a row), PDF rows link to `/media/attachment/{att}`.
+- Added per-file remove button via `ui.button()` (small, secondary, with trash icon) in a POST
+  form to `/items/{id}/attachments/{att}/_delete` for each tab, pdf, and audio attachment.
+- Added upload form at bottom of Files section: `enctype="multipart/form-data"`, group with
+  `ui.field("file", "File", type="file")` + `ui.field("label", "Label (optional)")`, `.actions`
+  with `ui.button("Upload", kind="primary", type="submit")`.
+- Added `.remove-form` class (`display: inline`) to `pages.css`.
+- No assertions in `test_attachments.py` checked old markup; no test updates needed.
+- All 411 tests pass, 99% coverage, `make check` clean.

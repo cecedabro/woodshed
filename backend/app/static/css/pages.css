@@ -1,3 +1,7 @@
 /* Page-specific layout. Agent-owned: only var(--...) tokens from tokens.css, no raw
  * colours or font sizes (tests/test_ui_rules.py checks). Prefer the helpers in
  * components.css (.stack, .cluster, .spread, .split) before adding anything here. */
+
+.remove-form {
+  display: inline;
+}
