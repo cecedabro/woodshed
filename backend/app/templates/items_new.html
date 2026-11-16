@@ -5,11 +5,35 @@
 {% block nav_left %}{{ ui.nav_link("Back", back_url, back=True) }}{% endblock %}
 {% block content %}
 {% call ui.section("Find the song") %}
-  <form method="get" action="/items/lookup" class="form">
-    {{ ui.search("q", "Search MusicBrainz", q) }}
-  </form>
-  <div id="mb-results"></div>
+  <div class="group">
+    {{ ui.field("lookup_title", "Title", value="", placeholder="Song title") }}
+    {{ ui.field("lookup_artist", "Artist", value="", placeholder="Artist name") }}
+  </div>
+  <div class="actions actions-end">
+    {{ ui.button("Search MusicBrainz", kind="secondary", type="button", attrs={"id": "lookup-btn"}) }}
+  </div>
 {% endcall %}
+<div id="mb-results"></div>
+<script>
+    const lookupBtn = document.getElementById('lookup-btn')
+    const lookupTitle = document.getElementById('lookup_title')
+    const lookupArtist = document.getElementById('lookup_artist')
+    if (lookupBtn) {
+        lookupBtn.addEventListener('click', () => {
+            const title = lookupTitle.value.trim()
+            const artist = lookupArtist.value.trim()
+            if (!title && !artist) return
+            const params = new URLSearchParams()
+            if (title) params.set('title', title)
+            if (artist) params.set('artist', artist)
+            hx.get({
+                'path': '/items/lookup?' + params.toString(),
+                'target': '#mb-results',
+                'swap': 'innerHTML',
+            })
+        })
+    }
+</script>
 <form method="post" action="/items/new" class="form stack-lg">
   {% include "partials/item_fields.html" %}
 </form>

@@ -15,7 +15,7 @@ from app.db import get_db
 from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
 from app.models import Attachment, Item
-from app.musicbrainz import MBUnavailable, search
+from app.musicbrainz import MBUnavailable, build_query, search
 from app.stats import tempo_history
 from app.templating import env, get_theme
 
@@ -58,8 +58,10 @@ def get_library(request: Request) -> HTMLResponse:
 
 @router.get("/items/lookup", response_model=None)
 def get_lookup_items(request: Request) -> HTMLResponse:
-    """GET /items/lookup?q=<query> – search MusicBrainz and return results."""
-    q = request.query_params.get("q", "")
+    """GET /items/lookup?title=&artist= – search MusicBrainz and return results."""
+    title = request.query_params.get("title", "")
+    artist = request.query_params.get("artist", "")
+    q = build_query(title, artist)
     error = ""
     candidates = []
     if q:
@@ -72,6 +74,8 @@ def get_lookup_items(request: Request) -> HTMLResponse:
             candidates=candidates,
             error=error,
             q=q,
+            title=title,
+            artist=artist,
             theme=get_theme(request.app),
         )
     )

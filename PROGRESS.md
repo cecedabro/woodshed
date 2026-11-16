@@ -180,3 +180,12 @@ don't read that file, search it with `rg` if you need something.
 - Added `GET /items/lookup` route in `app/routes/items.py` that calls `search()` and renders `partials/mb_results.html` (candidate rows with `data-*` attributes + error/nothing-found messages).
 - Created `backend/tests/test_musicbrainz_search.py` (13 tests): fake fetch for URL params/User-Agent/timeout, rate-limit body detection, `MBUnavailable` from `URLError` and invalid JSON, RateLimiter sleep/no-sleep/reset/defaults, end-to-end with real fixture and empty fixture.
 - All 524 tests pass, 96.73% coverage, `make check` clean.
+
+## "Find the song" link + results rendering (T76)
+- Added pre-fill link in `partials/item_fields.html`: `ui.link("Find the song", "/items/lookup", icon_name="search")` with a `p.mb-hint` description paragraph.
+- Added `build_query(title, artist)` helper in `musicbrainz.py` that generates a `recording:"..." AND artist:"..."` query string with proper escaping (backslashes, double-quotes).
+- Added `partials/mb_results.html` template: renders candidate rows as `.mb-result` divs with `data-*` attributes (mbid, rgid, title, artist, year, length), each row contains an `.mb-result-link` to `/items/new?kind=song&title=…&artist=…&year=…&mbid=…&release_group_id=…` (omits `length`). Also renders "Nothing found." when empty, and a fallback message when `MBUnavailable` is raised.
+- Updated `items_new.html` to include the "Find the song" section before the form.
+- Updated `items.py` lookup route: parses `title`/`artist` from query params, calls `build_query()` (skips search when both empty), renders `mb_results.html` with `{% call ui.group() %}…{% endcall %}` (not `{{ }}`) so UI macros work inside the partial swap.
+- Created `backend/tests/test_mb_lookup_page.py` (14 tests): 200 status, query building with title+artist/title only/artist only, empty params handling, pre-fill links containing title/artist/year/mbid/rgid (no length), pre-fill link has no `original_url`, error message on `MBUnavailable`, no error when no query, and data attributes on result rows.
+- All 538 tests pass, `make check` clean.
