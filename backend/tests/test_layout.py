@@ -1,11 +1,11 @@
-"""Layout tests: nav, htmx link, style.css link, local_time filter (Task T03)."""
+"""Layout tests: nav, htmx and stylesheet links, local_time filter."""
 
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 
 
 class _NavLinkParser(HTMLParser):
-    """Extract <a> tags inside <nav>."""
+    """Extract <a> tags inside the main <nav aria-label="Main">."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -15,7 +15,7 @@ class _NavLinkParser(HTMLParser):
         self._attrs: dict[str, str] = {}
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "nav":
+        if tag == "nav" and ("aria-label", "Main") in attrs:
             self._in_nav = True
         if self._in_nav and tag == "a":
             self._in_a = True
@@ -35,40 +35,27 @@ def _nav_links(html: str) -> list[dict[str, str]]:
     return p.nav
 
 
-def test_home_has_all_five_nav_links(client) -> None:
-    """SPEC 10.1: every page has the five nav links."""
-    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
-    r = client.get("/")
+def test_nav_has_tabs_and_settings(client) -> None:
+    """SPEC 10.1: Home, Library, Routines, Tuner, Progress, plus Settings (sidebar on desktop)."""
+    r = client.get("/library")
     assert r.status_code == 200
-
-    links = _nav_links(r.text)
-    assert len(links) == 5
-
-    hrefs = {a["href"] for a in links}
-    assert hrefs == {"/", "/library", "/routines", "/progress", "/settings"}
+    hrefs = [a["href"] for a in _nav_links(r.text)]
+    assert hrefs == ["/", "/library", "/routines", "/tuner", "/progress", "/settings"]
 
 
-def test_home_has_aria_current(client) -> None:
+def test_nav_aria_current(client) -> None:
     """SPEC 10.1: only the current page has aria-current='page'."""
-    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
-    r = client.get("/")
-    assert r.status_code == 200
-
-    links = _nav_links(r.text)
-    current = [a for a in links if a.get("aria-current") == "page"]
-    assert len(current) == 1
-    assert current[0]["href"] == "/"
+    r = client.get("/library")
+    current = [a for a in _nav_links(r.text) if a.get("aria-current") == "page"]
+    assert [a["href"] for a in current] == ["/library"]
 
 
-def test_htmx_and_stylecss_linked(client) -> None:
-    """The base template links htmx.min.js and style.css."""
-    client.post("/login", data={"password": "dev-password"}, follow_redirects=False)
-    r = client.get("/")
-    assert r.status_code == 200
-    text = r.text
-
+def test_htmx_and_design_css_linked(client) -> None:
+    """The base template links htmx and the three design-system stylesheets (SPEC 12.2)."""
+    text = client.get("/library").text
     assert '<script src="/static/vendor/htmx.min.js"></script>' in text
-    assert 'href="/static/style.css"' in text
+    for css in ("tokens.css", "components.css", "pages.css"):
+        assert f'href="/static/css/{css}"' in text
 
 
 def test_local_time_winter() -> None:

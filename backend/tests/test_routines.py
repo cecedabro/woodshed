@@ -127,7 +127,7 @@ def test_get_new_routine_page(client: TestClient) -> None:
     _login(client)
     resp = client.get("/routines/new")
     assert resp.status_code == 200
-    assert '<input type="text" name="name"' in resp.text
+    assert 'name="name"' in resp.text
     assert "New Routine" in resp.text
 
 

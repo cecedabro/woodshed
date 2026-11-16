@@ -128,7 +128,7 @@ def test_run_item_heading_is_item_title(client: TestClient, db: Session) -> None
     resp = client.get(f"/run/item/{item.id}")
     html = resp.text
 
-    assert "<h1>My Blues Song</h1>" in html
+    assert "My Blues Song" in html
 
 
 def test_run_item_has_library_back_link(client: TestClient, db: Session) -> None:

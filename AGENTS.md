@@ -57,6 +57,19 @@ So: **run the accept command and `make check` yourself before you stop, and fix 
 - After each task, append 3–5 lines to `PROGRESS.md`: what you changed, where, and
   anything the next task must know (a new env var, route, fixture, gotcha).
 
+## Context budget (important)
+Your context window is about 48k tokens. When it fills up, the session is compacted and
+you lose track of the task. Earlier runs failed this way. So:
+- Never read these whole: `PLAN.md`, `SPEC.md`, `docs/design.md`, `docs/progress-history.md`,
+  `backend/app/static/css/components.css`, `backend/app/templates/_ui.html`. Find the part
+  with `rg -n '<term>' <file>` and read only those lines (offset/limit).
+- Your task text already says which files to read. Start there; don't explore the repo.
+- Don't use sub-agents to "explore the codebase".
+- Run tests with `-q` and only the files in `accept:` until the end; then `make check` once.
+- Old tests in `backend/tests/` that check **old markup** (a class name, a raw `<input>`,
+  an `<h1>`) may be updated to the new markup. Tests that check **behaviour** may not be
+  weakened. Never edit `test_ui_rules.py`, `base.html`, `_ui.html` or the CSS tokens/components.
+
 ## Fixed technical decisions (do not revisit)
 - Python 3.12, FastAPI, SQLAlchemy 2 (typed `Mapped[...]` models), Alembic, Postgres, `uv`.
 - Server-rendered Jinja2 + HTMX. No SPA, no build step, no inline `<script>`.

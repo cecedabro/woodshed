@@ -3,9 +3,14 @@
 Routes: GET/POST /items/new, GET/POST /items/{item_id}/edit.
 """
 
+import re
+
 from sqlalchemy import select
 
 from app.models import Item
+
+# A field error: `class="error"` on the old layout, `class="field-error"` in the design system.
+ERROR = re.compile(rb'class="(?:field-)?error"')
 
 # ---------------------------------------------------------------------------
 # GET /items/new
@@ -40,7 +45,7 @@ def test_get_new_item_has_status_options(client):
 
 def test_get_new_item_no_error_spans(client):
     resp = client.get("/items/new")
-    assert b'class="error"' not in resp.content
+    assert not ERROR.search(resp.content)
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +104,7 @@ def test_post_new_item_rejects_empty_title(client, db):
         follow_redirects=False,
     )
     assert resp.status_code == 422
-    assert b'class="error"' in resp.content
+    assert ERROR.search(resp.content)
     assert b"title" in resp.content.lower()
     assert db.scalar(select(Item)) is None
 
@@ -217,7 +222,7 @@ def test_post_new_item_error_next_to_field(client, db):
     # Each field error span should be inside the field div
     # Check that "error" class appears alongside the field
     # We check that the response contains the error message near the field
-    assert resp.content.count(b'class="error"') >= 3  # kind, title, status + selects
+    assert len(ERROR.findall(resp.content)) >= 3  # kind, title, status + selects
 
 
 # ---------------------------------------------------------------------------

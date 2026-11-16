@@ -56,7 +56,7 @@ def test_settings_page_has_form(client: TestClient) -> None:
     """Settings page has a form with a numeric input named weekly_goal_minutes."""
     _login(client)
     resp = client.get("/settings")
-    assert '<input type="number"' in resp.text
+    assert 'type="number"' in resp.text
     assert 'name="weekly_goal_minutes"' in resp.text
 
 
