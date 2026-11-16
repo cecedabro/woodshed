@@ -146,7 +146,7 @@ attribute working, and updates assertions in existing tests that checked old mar
   accept: cd backend && ! grep -qx "settings.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_settings.py tests/test_theme.py -q
 - [x] T85: Migrate `login.html` (`{% set bare = True %}`) and `404.html` per the recipes. Read only the recipe in docs/design.md (`rg -n '^\*\*Login' docs/design.md`, then ~25 lines), the macro signatures (`rg -n 'macro ' backend/app/templates/_ui.html`), the template(s) named and the tests in accept. Login must still return 401 on a wrong password and 429 when rate limited.
   accept: cd backend && ! grep -qxE "login.html|404.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_login.py tests/test_login_ratelimit.py tests/test_404.py -q
-- [ ] T69: Remove the old layout: delete `templates/legacy_base.html` and `static/style.css`, remove `legacy_base.html` from `tests/ui_legacy.txt` (it then has only comments). Nothing may reference them.
+- [~] T69: Remove the old layout: delete `templates/legacy_base.html` and `static/style.css`, remove `legacy_base.html` from `tests/ui_legacy.txt` (it then has only comments). Nothing may reference them. — skipped: $ cd backend && test ! -e app/templates/legacy_base.html && test ! -e app/static/style.css && ! grep -qv "^#" tests/ui_legacy.txt && ! grep -rq "style.css\|lega
   accept: cd backend && test ! -e app/templates/legacy_base.html && test ! -e app/static/style.css && ! grep -qv "^#" tests/ui_legacy.txt && ! grep -rq "style.css\|legacy_base" app && uv run pytest -q
 
 ## Round 7: tuner (SPEC 13, docs/frontend.md pitch.js)
