@@ -3,5 +3,4 @@
 404.html
 login.html
 _macros.html
-settings.html
 legacy_base.html

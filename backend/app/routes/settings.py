@@ -35,6 +35,16 @@ def _get_theme(db: Any) -> str:
     return row if row else "amp"
 
 
+def _get_tuner_a4(db: Any) -> int:
+    try:
+        row = db.execute(
+            text("SELECT value FROM setting WHERE key = 'tuner_a4'")
+        ).scalar_one_or_none()
+    except SQLAlchemyError:
+        row = None
+    return int(row) if row else 440
+
+
 @router.get("/settings", response_model=None)
 def get_settings(
     request: Request,
@@ -43,6 +53,7 @@ def get_settings(
         try:
             value = _get_weekly_goal(db)
             theme = _get_theme(db)
+            tuner_a4 = _get_tuner_a4(db)
         finally:
             db.close()
     return HTMLResponse(
@@ -51,6 +62,7 @@ def get_settings(
             value=value,
             theme=theme,
             theme_options=_THEME_OPTIONS,
+            tuner_a4=tuner_a4,
             error=None,
         )
     )
@@ -66,23 +78,35 @@ async def post_settings(
     try:
         minutes = int(minutes_str)
     except (ValueError, TypeError):
+        with request.app.state.sessionmaker() as db:
+            try:
+                tuner_a4 = _get_tuner_a4(db)
+            finally:
+                db.close()
         return HTMLResponse(
             env.get_template("settings.html").render(
                 active="settings",
                 value="",
                 theme=_validate_theme(form),
                 theme_options=_THEME_OPTIONS,
+                tuner_a4=tuner_a4,
                 error="Enter a number between 0 and 10080.",
             ),
             status_code=422,
         )
     if minutes < 0 or minutes > 10080:
+        with request.app.state.sessionmaker() as db:
+            try:
+                tuner_a4 = _get_tuner_a4(db)
+            finally:
+                db.close()
         return HTMLResponse(
             env.get_template("settings.html").render(
                 active="settings",
                 value=minutes_str,
                 theme=_validate_theme(form),
                 theme_options=_THEME_OPTIONS,
+                tuner_a4=tuner_a4,
                 error="Enter a number between 0 and 10080.",
             ),
             status_code=422,

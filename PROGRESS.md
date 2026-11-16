@@ -120,3 +120,10 @@ don't read that file, search it with `rg` if you need something.
 - Updated `backend/tests/test_progress_tempo.py`: changed section title assertion, replaced obsolete `.delta` class checks with value assertions (`"+20 bpm"`, `"-30 bpm"`).
 - Fixed mypy error in `progress.py` by extracting minutes list with `type: ignore[misc]` (dict return type from `weeks_12` mixes `int | date`).
 - All 437 tests pass, 99% coverage, `make check` clean.
+
+## Settings page migration, 2026-11-16 (T68)
+- Rewrote `backend/app/templates/settings.html` to extend `base.html` and use new UI macros per the design recipe: `.stack-lg` wrapper, `<form method="post" class="form stack-lg">` with sections "Practice" (weekly goal field with `ui.field()`), "Look" (theme select with `ui.select()` using amp/flat/daylight values), "Tuner" (A4 reference field), actions with `ui.button("Save", kind="primary")`, section "More" with `ui.row("Style guide", href="/styleguide")`, and a logout form with `ui.section("Account")` / `ui.row_button("Log out", tone="danger")`.
+- Updated `backend/app/routes/settings.py`: added `_get_tuner_a4()` helper, passed `tuner_a4` and `active` context to all template render calls (GET and POST error paths).
+- Removed `settings.html` from `backend/tests/ui_legacy.txt`.
+- No test assertion updates needed (existing assertions matched new markup).
+- All 440 tests pass, 98% coverage, `make check` clean.
