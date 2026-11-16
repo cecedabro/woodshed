@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.auth import require_login
 from app.db import get_db
 from app.models import Routine
-from app.templating import env
+from app.templating import env, get_theme
 
 router = APIRouter()
 
@@ -51,6 +51,7 @@ def get_routines(
         env.get_template("routines_list.html").render(
             active="routines",
             routines=routines,
+            theme=get_theme(request.app),
         )
     )
 
@@ -65,6 +66,7 @@ async def get_new_routine(
             active="routines",
             routine=None,
             errors=None,
+            theme=get_theme(request.app),
         )
     )
 
@@ -84,6 +86,7 @@ async def post_new_routine(
                 active="routines",
                 routine=None,
                 errors={"name": "Name is required."},
+                theme=get_theme(request.app),
             ),
             status_code=422,
         )
@@ -112,6 +115,7 @@ def get_routine_edit(
         env.get_template("routines_edit.html").render(
             active="routines",
             routine=routine,
+            theme=get_theme(request.app),
         )
     )
 
@@ -135,6 +139,7 @@ def get_delete_routine(
         env.get_template("routines_delete.html").render(
             active="routines",
             routine=routine,
+            theme=get_theme(request.app),
         )
     )
 
@@ -178,6 +183,7 @@ def _render_block_list(routine: Routine, db: Session) -> str:
     return env.get_template("_routine_blocks.html").render(
         routine=routine,
         blocks=list(blocks),
+        theme="amp",
     )
 
 

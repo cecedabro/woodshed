@@ -25,7 +25,7 @@ from app.routes import (
 from app.security import SecurityMiddleware
 from app.sessions import router as sessions_router
 from app.stats import minutes_per_week, week_start
-from app.templating import env
+from app.templating import env, get_theme
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -51,7 +51,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 status_code=404,
             )
         template = env.get_template("404.html")
-        return HTMLResponse(template.render({"active": None}), status_code=404)
+        return HTMLResponse(
+            template.render({"active": None, "theme": get_theme(request.app)}),
+            status_code=404,
+        )
 
     @app.get("/")
     def home(login: None = Depends(require_login)) -> HTMLResponse:
@@ -105,6 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "routines": routines,
                     "week_minutes": week_minutes,
                     "goal": goal,
+                    "theme": get_theme(app),
                 }
             )
         )
@@ -121,6 +125,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except SQLAlchemyError:
             return JSONResponse({"status": "unavailable"}, status_code=503)
         return JSONResponse({"status": "ready"})
+
+    @app.get("/styleguide", response_model=None)
+    def styleguide(
+        request: Request,
+        login: None = Depends(require_login),
+    ) -> HTMLResponse:
+        return HTMLResponse(
+            env.get_template("styleguide.html").render(
+                active=None,
+                theme=get_theme(app),
+            )
+        )
 
     app.add_api_route("/login", get_login, methods=["GET"])
     app.add_api_route("/login", post_login, methods=["POST"])

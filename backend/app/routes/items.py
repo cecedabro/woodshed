@@ -16,7 +16,7 @@ from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
 from app.models import Attachment, Item
 from app.stats import tempo_history
-from app.templating import env
+from app.templating import env, get_theme
 
 router = APIRouter()
 
@@ -50,6 +50,7 @@ def get_library(request: Request) -> HTMLResponse:
             groups=groups,
             kind_filter=kind,
             q=q,
+            theme=get_theme(request.app),
         )
     )
 
@@ -71,7 +72,11 @@ def get_item_page(request: Request, item_id: int) -> HTMLResponse | RedirectResp
     edit_url = f"/items/{item.id}/edit"
     return HTMLResponse(
         env.get_template("items_detail.html").render(
-            item=item, active="items", edit_link=edit_url, tempo_history=tempo
+            item=item,
+            active="items",
+            edit_link=edit_url,
+            tempo_history=tempo,
+            theme=get_theme(request.app),
         )
     )
 
@@ -97,6 +102,7 @@ def get_delete_item(request: Request, item_id: int) -> HTMLResponse | RedirectRe
             item=item,
             attachment_count=len(item.attachments),
             take_count=len(item.takes),
+            theme=get_theme(request.app),
         )
     )
 
@@ -202,6 +208,7 @@ def get_tab_viewer(
             active="items",
             attachment=att,
             item=item,
+            theme=get_theme(request.app),
         )
     )
 

@@ -401,3 +401,14 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - `backend/tests/test_routine_move.py`: 11 tests — auth guard, bad direction (422), routine/block not found (404), move down (A down twice = B,C,A), move up (A,C,B → C up = C,A,B), boundary no-ops, single-block noop, two-block swap, and consecutive positions after move.
 - Gotcha: Raw SQL in `_create_routine_with_blocks` bypasses SQLAlchemy defaults; `status='learning'` and `notes=''` must be included in `INSERT INTO item`.
 - Gotcha: `_routine_blocks.html` must `{% import "_ui.html" as ui %}` to use `ui.button()` and pass the design-system UI rule check.
+
+## T59 — Theme and style guide (SPEC 12.3–12.4)
+- `backend/app/templating.py`: added `get_theme(app)` helper that reads `theme` from the `setting` table (default `"amp"`) and returns the validated theme value.
+- `backend/app/templates/legacy_base.html`: updated root layout to render `data-theme="{{ theme }}"` on the `<html>` tag when `theme` is not `"amp"` (which defaults to no attribute).
+- `backend/app/routes/settings.py`: added theme persistence alongside `weekly_goal_minutes` — `_get_theme` helper (with `from typing import Any` annotation), `_save_theme` route handler validating allowed themes (`amp`, `dark`, `light`, `night`), stored as string via `ON CONFLICT` upsert. Fixed mypy errors by adding explicit `Any` type annotations for `_get_weekly_goal` and `_get_theme`.
+- `backend/app/templates/settings.html`: added a `<select>` dropdown for theme selection next to the weekly goal input.
+- `backend/app/main.py`: home and 404 handlers now inject `theme=get_theme(request.app)`; added `GET /styleguide` route rendering `styleguide.html` with theme context.
+- `backend/app/routes/items.py`, `app/item_forms.py`, `app/routes/routines.py`, `app/routes/run.py`, `app/routes/progress.py`, `app/auth.py`: all legacy route handlers updated to import `get_theme` and pass `theme=get_theme(request.app)` to `env.get_template(...).render()`.
+- `backend/tests/test_theme.py`: 10 tests covering default theme (`amp`), `data-theme` attribute rendering (theme not amp), theme persistence in settings page, theme save (valid/invalid), settings page selector visibility, and `GET /styleguide` rendering.
+- All 397 tests pass; `make check` succeeds (ruff, mypy, pytest ≥90% coverage, jscheck, bandit).
+- `routines.py` `_render_block_list` helper retains hardcoded `theme="amp"` since it lacks access to the request object (HTMX fragment render).

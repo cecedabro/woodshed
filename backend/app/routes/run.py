@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 
 from app.auth import require_login
 from app.models import Item, Routine, RoutineBlock
-from app.templating import env
+from app.templating import env, get_theme
 
 router = APIRouter()
 
@@ -48,6 +48,7 @@ def get_run_item(
             active="run",
             routine=None,
             blocks=blocks,
+            theme=get_theme(request.app),
         )
     )
 
@@ -81,5 +82,6 @@ def get_run_routine(
             active="run",
             routine=routine,
             blocks=blocks,
+            theme=get_theme(request.app),
         )
     )

@@ -141,7 +141,7 @@ def _record_failure(state: Any, now: datetime) -> None:
 
 
 def _open_template(template_name: str, extra: dict[str, Any] | None = None) -> HTMLResponse:
-    data = {"active": None, "error": None, **(extra or {})}
+    data = {"active": None, "error": None, "theme": "amp", **(extra or {})}
     template = env.get_template(template_name)
     return HTMLResponse(template.render(data))
 
@@ -163,7 +163,13 @@ def post_login(
     if _is_rate_limited(request.app.state, now):
         template = env.get_template("login.html")
         return HTMLResponse(
-            template.render({"active": None, "error": "Too many attempts. Wait 15 minutes."}),
+            template.render(
+                {
+                    "active": None,
+                    "error": "Too many attempts. Wait 15 minutes.",
+                    "theme": "amp",
+                }
+            ),
             status_code=429,
         )
 

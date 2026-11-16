@@ -111,7 +111,7 @@ Each migration rewrites the named templates with the recipe from docs/design.md,
 lines from `backend/tests/ui_legacy.txt`, keeps every route, form field, id and data
 attribute working, and updates assertions in existing tests that checked old markup
 (not behaviour). `tests/test_ui_rules.py` must pass.
-- [ ] T59: Theme and style guide (SPEC 12.3–12.4): setting `theme` (amp|flat|daylight, default amp), given to every template as `theme` by the one Jinja environment (a context function or global reading the setting per request); `GET /styleguide` renders `styleguide.html` (`active` none). Write `tests/test_theme.py` (default page has no `data-theme`; after setting daylight, `/` has `<html lang="en" data-theme="daylight">`; `/styleguide` → 200 logged in, 303 logged out).
+- [x] T59: Theme and style guide (SPEC 12.3–12.4): setting `theme` (amp|flat|daylight, default amp), given to every template as `theme` by the one Jinja environment (a context function or global reading the setting per request); `GET /styleguide` renders `styleguide.html` (`active` none). Write `tests/test_theme.py` (default page has no `data-theme`; after setting daylight, `/` has `<html lang="en" data-theme="daylight">`; `/styleguide` → 200 logged in, 303 logged out).
   accept: cd backend && uv run pytest tests/test_theme.py tests/test_ui_rules.py -q
 - [ ] T60: Migrate Home (`home.html`) per the recipe. Update `tests/test_home.py` where it checked old markup; add a check that the first routine is rendered with class `start` and the progress shows "of 120 min".
   accept: cd backend && ! grep -qx "home.html" tests/ui_legacy.txt && uv run pytest tests/test_ui_rules.py tests/test_home.py tests/test_week_totals.py -q

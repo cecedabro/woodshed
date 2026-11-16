@@ -4,8 +4,11 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
+from fastapi import FastAPI
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.clock import LOCAL_TZ
 
@@ -17,6 +20,25 @@ env = Environment(
     enable_async=False,
 )
 env.globals["enumerate"] = enumerate
+
+
+def get_theme(app: FastAPI) -> str:
+    """Return the current theme setting ('amp', 'flat', or 'daylight').
+
+    Defaults to ``'amp'`` when the database is unavailable or the setting
+    is missing (SPEC 12.3).
+    """
+    try:
+        with app.state.sessionmaker() as db:
+            try:
+                row = db.execute(
+                    text("SELECT value FROM setting WHERE key = 'theme'")
+                ).scalar_one_or_none()
+            finally:
+                db.close()
+        return row if row else "amp"
+    except SQLAlchemyError:
+        return "amp"
 
 
 def local_time(dt: datetime) -> str:

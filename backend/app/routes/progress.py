@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.auth import require_login
 from app.stats import item_tempo_progress, weeks_12
-from app.templating import env
+from app.templating import env, get_theme
 
 router = APIRouter()
 
@@ -36,5 +36,6 @@ def get_progress(
             weeks=week_data,
             goal=goal,
             tempo_items=tempo_items,
+            theme=get_theme(request.app),
         )
     )
