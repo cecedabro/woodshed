@@ -127,3 +127,33 @@ don't read that file, search it with `rg` if you need something.
 - `run.html` renders per block the first Tab / PDF / Backing track row (`data-block`, later blocks `hidden`); `routes/run.py` gives `links`, "Next: …" and `m:ss`.
 - `components.css`: `[hidden] { display: none !important; }`; without it `hidden` does nothing on `.row`, `.split`, etc.
 - Run JS tests with `node --test 'tests/js/**/*.test.js'`; `node --test tests/js/` fails on Node 22.
+## Settings page migration, 2026-11-16 (T68)
+- Rewrote `backend/app/templates/settings.html` to extend `base.html` and use new UI macros per the design recipe: `.stack-lg` wrapper, `<form method="post" class="form stack-lg">` with sections "Practice" (weekly goal field with `ui.field()`), "Look" (theme select with `ui.select()` using amp/flat/daylight values), "Tuner" (A4 reference field), actions with `ui.button("Save", kind="primary")`, section "More" with `ui.row("Style guide", href="/styleguide")`, and a logout form with `ui.section("Account")` / `ui.row_button("Log out", tone="danger")`.
+- Updated `backend/app/routes/settings.py`: added `_get_tuner_a4()` helper, passed `tuner_a4` and `active` context to all template render calls (GET and POST error paths).
+- Removed `settings.html` from `backend/tests/ui_legacy.txt`.
+- No test assertion updates needed (existing assertions matched new markup).
+- All 440 tests pass, 98% coverage, `make check` clean.
+
+## Login and 404 page migration, 2026-11-16 (T85)
+- Rewrote `backend/app/templates/login.html` to extend `base.html` (no more `legacy_base.html`),
+  using `{% import "_ui.html" as ui %}`, `ui.field("password", "Password", type="password", required=True, error=error)`,
+  and `ui.button("Log in", kind="primary", type="submit", size="big", block=True)`.
+- Rewrote `backend/app/templates/404.html` to extend `base.html`: title "Not found", `<span class="page-title">404</span>`,
+  two `<p>` elements for the messages, and a plain `<a href="/">Go home</a>`.
+- Updated `backend/app/auth.py`: passed `{"bare": True}` in all three login template render calls
+  (GET, rate-limited 429, wrong password 401).
+- Removed both `login.html` and `404.html` from `backend/tests/ui_legacy.txt`.
+- All 446 tests pass, 98.43% coverage, `make check` clean.
+
+## Pitch detection pure module (T70)
+- Created `backend/app/static/js/pitch.js` with pure functions: `detectPitch(samples, sampleRate)` (autocorrelation with parabolic interpolation, RMS silence check at 0.01, 60–1200 Hz clamp), `noteFor(freq, a4)` (MIDI + cents calculation), `nearestString(freq)` (closest STANDARD string), and `STANDARD` array [E2=82.41, A2=110.0, D3=146.83, G3=196.0, B3=246.94, E4=329.63].
+- Created `backend/tests/js/pitch.test.js` with 28 test cases covering all 6 standard strings (±0.5% freq accuracy), note mapping (name/octave/cents/midi), 440 Hz → A4, 446 Hz → +23.4 cents, a4=432 tuning, silence/low-amplitude → null, harmonic interference (110 Hz + 0.6×220 Hz → 110 Hz), nearestString edge cases, and boundary frequencies (60 Hz, 1000 Hz).
+- All 28 node tests pass, `make check` clean (lint + mypy + pytest 98% + js + bandit + migrations).
+
+## Tuner page (T71)
+- Created `backend/app/routes/tuner.py` (`GET /tuner`) fetching `tuner_a4` from DB (defaults to 440), passing `active="tuner"`, `a4`, and `strings` (STANDARD_TUNING array) to template.
+- Created `backend/app/templates/tuner.html` per the design recipe: extends `base.html`, `.stack-lg` wrapper, `data-a4="{{ tuner_a4 }}"` on root div, `#tuner-note` + `#tuner-hz` displays, `#tuner-meter` with `tuner-needle`, "Connect mic" button, six `data-freq` reference tone buttons, and loads `tuner.js` as ES module.
+- Created `backend/app/static/js/tuner.js`: mic toggle via `getUserMedia`, `setMicButton()` with loading/cancel states, pitch loop (10 fps via `requestAnimationFrame`) using `pitch.js` `detectPitch()`/`noteFor()`/`nearestString()`, meter needle update (`--cents` CSS property), reference tone playback via `OscillatorNode` (2s with linear ramp fade-out), `data-freq` button click handlers.
+- Wired router in `backend/app/routes/__init__.py` (imported `tuner_router`) and `backend/app/main.py` (mounted `app.include_router(tuner_router)`).
+- Created `backend/tests/test_tuner_page.py` (10 tests: 200 status, `aria-current="page"`, module script, six `data-freq` values, `data-a4="440"`, note/hz/meter/status/scale elements).
+- All 459 tests pass, 98% coverage, `make check` clean.

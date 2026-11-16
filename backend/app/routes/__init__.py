@@ -9,6 +9,7 @@ from app.routes.progress import router as progress_router
 from app.routes.routines import router as routines_router
 from app.routes.run import router as run_router
 from app.routes.settings import router as settings_router
+from app.routes.tuner import router as tuner_router
 
 __all__ = [
     "items_router",
@@ -17,4 +18,5 @@ __all__ = [
     "routines_router",
     "run_router",
     "settings_router",
+    "tuner_router",
 ]

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+
+{% block title %}Woodshed — Tuner{% endblock %}
+
+{% block content %}
+<div class="stack-lg" id="tuner" data-a4="{{ a4 }}">
+  <div class="tuner">
+    <p class="tuner-note" id="tuner-note">–</p>
+    <p class="tuner-hz" id="tuner-hz">&nbsp;</p>
+    <div class="tuner-meter is-idle" id="tuner-meter" aria-hidden="true"><span class="tuner-needle"></span></div>
+    <div class="tuner-scale" aria-hidden="true"><span>−50</span><span>0</span><span>+50</span></div>
+    <p class="tuner-status" id="tuner-status" aria-live="polite">Play a string</p>
+  </div>
+  {{ ui.button("Start tuner", kind="primary", size="big", block=True, icon_name="mic", attrs={"id": "tuner-toggle"}) }}
+  {% call ui.section("Reference tones", footer="Standard tuning, A4 = " ~ a4 ~ " Hz. Change it in Settings.") %}
+    <div class="cluster">
+      {% for name, freq in strings %}{{ ui.button(name, size="small", attrs={"data-freq": freq, "aria-pressed": "false"}) }}{% endfor %}
+    </div>
+  {% endcall %}
+</div>
+<script type="module" src="/static/js/tuner.js"></script>
+{% endblock %}

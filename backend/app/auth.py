@@ -168,7 +168,7 @@ def _open_template(
 
 
 def get_login(request: Request, settings: Settings = Depends(_get_settings)) -> HTMLResponse:
-    return _open_template("login.html")
+    return _open_template("login.html", {"bare": True})
 
 
 def post_login(
@@ -189,6 +189,7 @@ def post_login(
                     "active": None,
                     "error": "Too many attempts. Wait 15 minutes.",
                     "theme": "amp",
+                    "bare": True,
                 }
             ),
             status_code=429,
@@ -207,7 +208,9 @@ def post_login(
     else:
         # Record failure
         _record_failure(request.app.state, now)
-        return _open_template("login.html", {"error": "Wrong password"}, status_code=401)
+        return _open_template(
+            "login.html", {"error": "Wrong password", "bare": True}, status_code=401
+        )
 
 
 def post_logout(request: Request, settings: Settings = Depends(_get_settings)) -> Response:
