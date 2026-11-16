@@ -157,3 +157,41 @@ don't read that file, search it with `rg` if you need something.
 - Wired router in `backend/app/routes/__init__.py` (imported `tuner_router`) and `backend/app/main.py` (mounted `app.include_router(tuner_router)`).
 - Created `backend/tests/test_tuner_page.py` (10 tests: 200 status, `aria-current="page"`, module script, six `data-freq` values, `data-a4="440"`, note/hz/meter/status/scale elements).
 - All 459 tests pass, 98% coverage, `make check` clean.
+
+## Tuner reference in Settings, 2026-11-16 (T72)
+- Updated `backend/app/routes/settings.py`: added `tuner_a4` parsing and saving in POST handler. If the value is a valid integer in 430–450, it is persisted; otherwise it is silently skipped (existing value preserved, no error shown for tuner_a4 specifically). Non-numeric and out-of-range values are also skipped.
+- Updated `backend/tests/test_settings.py`: added 11 tests covering default 440 display, saved value display, POST saving of valid values (430, 432, 440, 450), rejection of out-of-range (429, 451), rejection of non-numeric ("abc"), empty field not overwriting existing, and tuner page using saved value.
+- All 470 tests pass, 98.31% coverage, `make check` clean.
+
+## Item year, mbid, release_group_id, has_cover fields (T84)
+- Added `year`, `mbid`, `release_group_id`, `has_cover` to `Item` model (`backend/app/models.py`).
+- Added `ItemIn` with `year` (1000–2100) and `mbid`/`release_group_id` (UUID) validators in `backend/app/items_service.py`; updated `create_item` and `update_item` to pass them through.
+- Generated migration `backend/alembic/versions/2cc9eaa2517d_item_mb_fields.py` with `ALTER TABLE item ADD COLUMN` for all four fields (nullable year, mbid, release_group_id; has_cover defaults to false).
+- Updated `backend/app/api.py` item response dicts to include new fields.
+- Updated `backend/app/item_forms.py`: `_extract_and_validate` parses `year` as int; `_item_to_form_data` maps new fields; `_render_form` passes `mbid`/`rgid` context; `get_edit_item` passes actual `item.mbid`/`item.release_group_id` to hidden form fields.
+- Added `year` visible `<input type="number">` in `partials/item_fields.html` (Practice section); `mbid`/`release_group_id` are hidden.
+- Created `backend/tests/test_item_mb_fields.py` (27 tests): form rendering, API creation with all fields, year boundary/validation, mbid/release_group_id UUID validation, edit form population, API response fields.
+- All 497 tests pass, 98.35% coverage, `make check` clean.
+
+## MusicBrainz pure parsing module (T74)
+- Created `backend/app/musicbrainz.py` with `Candidate` dataclass (frozen, immutable), `build_query()` (escapes backslashes and double-quotes, appends `AND artist:"…"` only when artist is not None), and `parse_recordings()` (extracts artist from artist-credit with joinphrase, first-release-date, length in m:ss, release-group-id; dedupes by (title, artist) case-insensitive keeping earliest date, sorts by score desc then date asc, limits to 8).
+- Created `backend/tests/test_musicbrainz_parse.py` (12 tests): Texas Flood fixture dedup (1 candidate, earliest year "1990", length "5:44"), Blackbird fixture (≤8 candidates, all titled "Blackbird", sorted by score then date), `build_query` quote escaping and artist clause presence, `build_query` no-artist case, backslash escaping, Candidate immutability.
+- All 509 tests pass, 98.34% coverage, `make check` clean.
+
+## MusicBrainz search: rate limiter, fetch, search(), /items/lookup (T75)
+- Added `MB_USER_AGENT` and `MB_TIMEOUT` (default 5) settings to `app/config.py`.
+- Added `RateLimiter` class to `app/musicbrainz.py` with injectable `clock`/`sleep` and a wait-before-request pattern (sleeps until 1 s since last request); default singleton via `_get_default_limiter()`.
+- Added `fetch_url()` function using `urllib.request.Request` with `User-Agent` header and configurable timeout; raises `MBUnavailable` on `HTTPError`/`URLError`; accepts optional `_real_fetch` for test injection (also wraps its errors in `MBUnavailable`).
+- Added `search()` function: calls `limiter.wait()`, builds URL with `fmt=json&limit=25&query=…`, calls `fetch_url()`, detects rate-limit response body, parses JSON via `parse_recordings()`. Raises `MBUnavailable` on invalid JSON or rate-limited body.
+- Added `GET /items/lookup` route in `app/routes/items.py` that calls `search()` and renders `partials/mb_results.html` (candidate rows with `data-*` attributes + error/nothing-found messages).
+- Created `backend/tests/test_musicbrainz_search.py` (13 tests): fake fetch for URL params/User-Agent/timeout, rate-limit body detection, `MBUnavailable` from `URLError` and invalid JSON, RateLimiter sleep/no-sleep/reset/defaults, end-to-end with real fixture and empty fixture.
+- All 524 tests pass, 96.73% coverage, `make check` clean.
+
+## "Find the song" link + results rendering (T76)
+- Added pre-fill link in `partials/item_fields.html`: `ui.link("Find the song", "/items/lookup", icon_name="search")` with a `p.mb-hint` description paragraph.
+- Added `build_query(title, artist)` helper in `musicbrainz.py` that generates a `recording:"..." AND artist:"..."` query string with proper escaping (backslashes, double-quotes).
+- Added `partials/mb_results.html` template: renders candidate rows as `.mb-result` divs with `data-*` attributes (mbid, rgid, title, artist, year, length), each row contains an `.mb-result-link` to `/items/new?kind=song&title=…&artist=…&year=…&mbid=…&release_group_id=…` (omits `length`). Also renders "Nothing found." when empty, and a fallback message when `MBUnavailable` is raised.
+- Updated `items_new.html` to include the "Find the song" section before the form.
+- Updated `items.py` lookup route: parses `title`/`artist` from query params, calls `build_query()` (skips search when both empty), renders `mb_results.html` with `{% call ui.group() %}…{% endcall %}` (not `{{ }}`) so UI macros work inside the partial swap.
+- Created `backend/tests/test_mb_lookup_page.py` (14 tests): 200 status, query building with title+artist/title only/artist only, empty params handling, pre-fill links containing title/artist/year/mbid/rgid (no length), pre-fill link has no `original_url`, error message on `MBUnavailable`, no error when no query, and data attributes on result rows.
+- All 538 tests pass, `make check` clean.

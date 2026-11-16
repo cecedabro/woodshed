@@ -12,6 +12,7 @@
   <div class="group">
     {{ ui.select("status", "Status", status_options, selected=item.status if item else None, error=errors.get("status") if errors else None) }}
     {{ ui.field("current_bpm", "Current BPM", value=item.current_bpm if item and item.current_bpm is not none else None, type="number", error=errors.get("current_bpm") if errors else None) }}
+    {{ ui.field("year", "Year", value=item.year if item and item.year is not none else None, type="number") }}
     {{ ui.field("original_url", "Original URL", value=item.original_url if item else None) }}
   </div>
 </section>

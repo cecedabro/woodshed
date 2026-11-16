@@ -196,6 +196,178 @@ def test_post_settings_422_shows_error(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Tuner A4 reference (SPEC 13.3)
+# ---------------------------------------------------------------------------
+
+
+def test_settings_shows_default_440_for_tuner_a4(client: TestClient) -> None:
+    """When no tuner_a4 setting exists, the form shows 440."""
+    _login(client)
+    resp = client.get("/settings")
+    assert 'name="tuner_a4"' in resp.text
+    assert "440" in resp.text
+
+
+def test_settings_shows_saved_tuner_a4(client: TestClient, db: Session) -> None:
+    """When a tuner_a4 value is stored, the form shows it."""
+    _login(client)
+    with db.begin():
+        db.add(Setting(key="tuner_a4", value="432"))
+        db.commit()
+
+    resp = client.get("/settings")
+    assert "432" in resp.text
+
+
+def test_post_settings_saves_valid_tuner_a4(client: TestClient, db: Session) -> None:
+    """Valid tuner_a4 (430–450) is saved."""
+    _login(client)
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "432"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "432"
+
+
+def test_post_settings_saves_440_tuner_a4(client: TestClient, db: Session) -> None:
+    """440 is a valid tuner_a4 and is saved."""
+    _login(client)
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "440"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "440"
+
+
+def test_post_settings_saves_450_tuner_a4(client: TestClient, db: Session) -> None:
+    """450 (upper bound) is valid and saved."""
+    _login(client)
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "450"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "450"
+
+
+def test_post_settings_saves_430_tuner_a4(client: TestClient, db: Session) -> None:
+    """430 (lower bound) is valid and saved."""
+    _login(client)
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "430"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "430"
+
+
+def test_post_settings_rejects_tuner_a4_below_430(client: TestClient, db: Session) -> None:
+    """tuner_a4 below 430 is not saved."""
+    _login(client)
+    # First set a valid value
+    with db.begin():
+        db.add(Setting(key="tuner_a4", value="440"))
+        db.commit()
+
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "429"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    # Must remain at the old value (440), 429 must NOT have been saved
+    assert row == "440"
+
+
+def test_post_settings_rejects_tuner_a4_above_450(client: TestClient, db: Session) -> None:
+    """tuner_a4 above 450 is not saved."""
+    _login(client)
+    with db.begin():
+        db.add(Setting(key="tuner_a4", value="440"))
+        db.commit()
+
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "451"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "440"
+
+
+def test_post_settings_rejects_non_numeric_tuner_a4(client: TestClient, db: Session) -> None:
+    """Non-numeric tuner_a4 is not saved."""
+    _login(client)
+    with db.begin():
+        db.add(Setting(key="tuner_a4", value="440"))
+        db.commit()
+
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": "abc"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "440"
+
+
+def test_post_settings_empty_tuner_a4_does_not_overwrite(client: TestClient, db: Session) -> None:
+    """Empty tuner_a4 field does not overwrite existing value."""
+    _login(client)
+    with db.begin():
+        db.add(Setting(key="tuner_a4", value="432"))
+        db.commit()
+
+    resp = client.post(
+        "/settings",
+        data={"weekly_goal_minutes": "120", "tuner_a4": ""},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+
+    with db.begin():
+        row = db.scalar(text("SELECT value FROM setting WHERE key = 'tuner_a4'"))
+    assert row == "432"
+
+
+def test_tuner_page_uses_saved_tuner_a4(client: TestClient, db: Session) -> None:
+    """Tuner page shows the saved tuner_a4 value in data-a4."""
+    with db.begin():
+        db.add(Setting(key="tuner_a4", value="432"))
+        db.commit()
+
+    resp = client.get("/tuner")
+    assert 'data-a4="432"' in resp.text
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

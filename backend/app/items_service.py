@@ -16,6 +16,10 @@ from app.models import Item
 _KIND_OPTIONS = {"song", "exercise"}
 _STATUS_OPTIONS = {"learning", "polishing", "repertoire"}
 _URL_PATTERN = re.compile(r"^https?://")
+_UUID_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 
 class ItemIn(BaseModel):
@@ -24,6 +28,9 @@ class ItemIn(BaseModel):
     artist: str | None = None
     status: str = "learning"
     current_bpm: int | None = None
+    year: int | None = None
+    mbid: str | None = None
+    release_group_id: str | None = None
     original_url: str | None = None
     notes: str | None = None
 
@@ -57,6 +64,27 @@ class ItemIn(BaseModel):
             raise ValueError("current_bpm must be between 20 and 400")
         return v
 
+    @field_validator("year")
+    @classmethod
+    def year_must_be_valid(cls, v: int | None) -> int | None:
+        if v is not None and (v < 1000 or v > 2100):
+            raise ValueError("year must be between 1000 and 2100")
+        return v
+
+    @field_validator("mbid")
+    @classmethod
+    def mbid_must_be_uuid(cls, v: str | None) -> str | None:
+        if v is not None and not _UUID_PATTERN.match(v):
+            raise ValueError("mbid must be a valid UUID")
+        return v
+
+    @field_validator("release_group_id")
+    @classmethod
+    def rgid_must_be_uuid(cls, v: str | None) -> str | None:
+        if v is not None and not _UUID_PATTERN.match(v):
+            raise ValueError("release_group_id must be a valid UUID")
+        return v
+
     @field_validator("original_url")
     @classmethod
     def url_must_be_http(cls, v: str | None) -> str | None:
@@ -86,6 +114,9 @@ def create_item(db: Session, data: ItemIn) -> Item:
         artist=data.artist,
         status=data.status,
         current_bpm=data.current_bpm,
+        year=data.year,
+        mbid=data.mbid,
+        release_group_id=data.release_group_id,
         original_url=data.original_url,
         notes=data.notes or "",
         created_at=now,
@@ -112,6 +143,9 @@ def update_item(db: Session, item_id: int, data: ItemIn) -> Item:
     item.artist = data.artist
     item.status = data.status
     item.current_bpm = data.current_bpm
+    item.year = data.year
+    item.mbid = data.mbid
+    item.release_group_id = data.release_group_id
     item.original_url = data.original_url
     item.notes = data.notes or ""
     item.updated_at = datetime.now(UTC)
