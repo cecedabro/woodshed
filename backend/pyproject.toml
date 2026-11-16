@@ -23,6 +23,7 @@ dev = [
     "ruff",
     "mypy",
     "pgserver",
+    "pytest-timeout>=2.4.0",
 ]
 
 [tool.ruff]
@@ -48,6 +49,8 @@ packages = ["app"]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-p no:cacheprovider"
+# A test that waits this long is stuck (a lock, a network call): fail it, do not hang the run.
+timeout = 120
 filterwarnings = ["ignore:Using .httpx. with .starlette.testclient. is deprecated"]
 
 [tool.coverage.run]
