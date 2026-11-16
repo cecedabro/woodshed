@@ -355,3 +355,14 @@ Appended by the agent after each task: what changed, where, and gotchas for late
   `Origin: http://localhost:8765` matches `scheme://host:port`.
 - `backend/tests/test_origin.py`: 6 tests — same-origin POST with port passes, foreign origin POST→403,
   HTTPS same-origin passes, HTTPS scheme mismatch→403, no Origin header→not 403, GET with foreign Origin→not 403.
+
+## T52 — Timer units: `now` is milliseconds, results are seconds
+- `backend/app/static/js/timer.js`: fixed all ms↔s conversions. `remaining()` and `played()`
+  divide `(now - startRunningAt) / 1000` to convert ms to seconds. `pause()` stores played
+  as seconds. This matches the spec in docs/frontend.md §js.
+- `backend/tests/js/timer.test.js`: rewritten with 23 tests using realistic ms values
+  (1_000_000 base). Covers: start, remaining/played with ms, pause, resume, addSeconds(60)→119,
+  isDone at +59 999ms/false and +60 000ms/true, negative addSeconds, double-pause no-op.
+- `backend/tests/js/runner.test.js`: updated `now` values from seconds (1000) to ms (1_000_000)
+  throughout so the runner's timer calls get correct ms→s conversion.
+

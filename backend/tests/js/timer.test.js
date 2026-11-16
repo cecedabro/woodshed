@@ -4,112 +4,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTimer } from "../../app/static/js/timer.js";
 
-test("remaining and played while running", () => {
-  const t = createTimer(60);
-  assert.equal(t.remaining(0), 60);
-  assert.equal(t.played(0), 0);
-  assert.equal(t.isRunning(), false);
-
-  t.start(0);
-  assert.equal(t.remaining(10), 50);
-  assert.equal(t.played(10), 10);
-  assert.equal(t.isRunning(), true);
-
-  assert.equal(t.remaining(30), 30);
-  assert.equal(t.played(30), 30);
-
-  assert.equal(t.remaining(60), 0);
-  assert.equal(t.played(60), 60);
-});
-
-test("pause excludes time from played", () => {
-  const t = createTimer(60);
-  t.start(0);
-  assert.equal(t.played(20), 20);
-  assert.equal(t.remaining(20), 40);
-
-  t.pause(20);
-  assert.equal(t.isRunning(), false);
-
-  // Advancing now while paused should not increase played
-  assert.equal(t.played(50), 20);
-  assert.equal(t.remaining(50), 40);
-});
-
-test("resume continues from pause point", () => {
-  const t = createTimer(60);
-  t.start(0);
-  assert.equal(t.played(20), 20);
-  assert.equal(t.remaining(20), 40);
-
-  t.pause(20);
-  t.resume(20);
-  assert.equal(t.isRunning(), true);
-
-  // 15 more seconds of running
-  assert.equal(t.played(35), 35);
-  assert.equal(t.remaining(35), 25);
-});
-
-test("addSeconds extends remaining", () => {
-  const t = createTimer(60);
-  t.start(0);
-  assert.equal(t.remaining(10), 50);
-
-  t.addSeconds(60);
-  assert.equal(t.remaining(10), 110);
-
-  assert.equal(t.remaining(20), 100);
-  assert.equal(t.played(20), 20);
-});
-
-test("isDone is true exactly when remaining reaches 0", () => {
-  const t = createTimer(60);
-  t.start(0);
-  assert.equal(t.isDone(0), false);
-  assert.equal(t.isDone(30), false);
-  assert.equal(t.isDone(59), false);
-  assert.equal(t.isDone(60), true);
-});
-
-test("remaining never goes negative", () => {
-  const t = createTimer(60);
-  t.start(0);
-
-  // Advance far past the planned duration
-  assert.equal(t.remaining(999), 0);
-
-  // Pause and resume should also not go negative
-  t.pause(60);
-  t.resume(60);
-  assert.equal(t.remaining(999), 0);
-  assert.equal(t.played(999), 999);
-});
-
-test("remaining is 0 on timer that completed, even if now advances past end", () => {
-  const t = createTimer(60);
-  t.start(0);
-  assert.equal(t.isDone(60), true);
-
-  // remaining stays at 0 even far past the end
-  assert.equal(t.remaining(1000), 0);
-});
-
-test("started timer does not play while paused, then plays after resume", () => {
-  const t = createTimer(30);
-  t.start(0);
-  assert.equal(t.remaining(15), 15);
-
-  t.pause(15);
-
-  // Large gap while paused
-  t.resume(100);
-
-  // Only 5 seconds of actual running on second interval
-  assert.equal(t.played(105), 20);
-  assert.equal(t.remaining(105), 10);
-});
-
 test("createTimer returns not started state", () => {
   const t = createTimer(60);
   assert.equal(t.isRunning(), false);
@@ -118,15 +12,196 @@ test("createTimer returns not started state", () => {
   assert.equal(t.isDone(0), false);
 });
 
+test("start sets running state from ms timestamp", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.isRunning(), true);
+});
+
+test("remaining returns correct seconds after start", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.remaining(1_001_000), 59);
+});
+
+test("played returns correct seconds after start", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.played(1_030_000), 30);
+});
+
+test("remaining decreases as ms time advances", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.remaining(1_000_000), 60);
+  assert.equal(t.remaining(1_010_000), 50);
+  assert.equal(t.remaining(1_030_000), 30);
+  assert.equal(t.remaining(1_059_000), 1);
+});
+
+test("played increases as ms time advances", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.played(1_000_000), 0);
+  assert.equal(t.played(1_010_000), 10);
+  assert.equal(t.played(1_030_000), 30);
+  assert.equal(t.played(1_059_000), 59);
+});
+
+test("isDone false at +59 999ms, true at +60 000ms", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.isDone(1_059_999), false);
+  assert.equal(t.isDone(1_060_000), true);
+});
+
+test("pause excludes time from played and remaining", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.played(1_010_000), 10);
+  assert.equal(t.remaining(1_010_000), 50);
+
+  t.pause(1_010_000);
+  assert.equal(t.isRunning(), false);
+
+  // Advancing now while paused should not increase played or decrease remaining
+  assert.equal(t.played(1_050_000), 10);
+  assert.equal(t.remaining(1_050_000), 50);
+});
+
+test("resume continues from pause point", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+
+  t.pause(1_010_000);
+  t.resume(1_015_000);
+
+  // 5 more seconds of running → total played = 15
+  assert.equal(t.played(1_020_000), 15);
+  assert.equal(t.remaining(1_020_000), 45);
+});
+
+test("pause at +10 000, resume at +15 000 → played at +20 000 is 15", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  t.pause(1_010_000);
+  t.resume(1_015_000);
+  assert.equal(t.played(1_020_000), 15);
+});
+
+test("addSeconds extends remaining right after start", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  t.addSeconds(60);
+  assert.equal(t.remaining(1_000_000), 120);
+});
+
+test("addSeconds during running extends remaining", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.remaining(1_005_000), 55);
+
+  t.addSeconds(30);
+  assert.equal(t.remaining(1_005_000), 85);
+  assert.equal(t.remaining(1_010_000), 80);
+});
+
+test("remaining never goes negative", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.remaining(1_060_000), 0);
+  assert.equal(t.remaining(1_099_999), 0);
+});
+
+test("isDone false at +59 999ms boundary", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.isDone(1_059_999), false);
+});
+
+test("isDone true at +60 000ms boundary", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.isDone(1_060_000), true);
+});
+
+test("timer does not play while paused, then plays after resume", () => {
+  const t = createTimer(30);
+  t.start(1_000_000);
+  assert.equal(t.remaining(1_015_000), 15);
+
+  t.pause(1_015_000);
+
+  // Large gap while paused
+  t.resume(1_100_000);
+
+  // 5 more seconds of running on second interval (15 + 5 = 20)
+  assert.equal(t.played(1_105_000), 20);
+  assert.equal(t.remaining(1_105_000), 10);
+});
+
+test("remaining is 0 after timer completes", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.isDone(1_060_000), true);
+  assert.equal(t.remaining(1_200_000), 0);
+});
+
 test("pause then addSeconds adjusts remaining", () => {
   const t = createTimer(60);
-  t.start(0);
-  t.pause(10);
-  assert.equal(t.remaining(10), 50);
+  t.start(1_000_000);
+  t.pause(1_010_000);
+  assert.equal(t.remaining(1_010_000), 50);
 
   t.addSeconds(60);
-  assert.equal(t.remaining(10), 110);
+  assert.equal(t.remaining(1_010_000), 110);
 
-  t.resume(10);
-  assert.equal(t.remaining(20), 100);
+  t.resume(1_010_000);
+  assert.equal(t.remaining(1_020_000), 100);
+});
+
+test("addSeconds(60) → remaining 119 one second after start", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  t.addSeconds(60);
+  assert.equal(t.remaining(1_001_000), 119);
+});
+
+test("remaining and played while running with ms values", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  assert.equal(t.remaining(1_010_000), 50);
+  assert.equal(t.played(1_010_000), 10);
+
+  assert.equal(t.remaining(1_030_000), 30);
+  assert.equal(t.played(1_030_000), 30);
+
+  assert.equal(t.remaining(1_060_000), 0);
+  assert.equal(t.played(1_060_000), 60);
+});
+
+test("pause then resume — exact 60s total with gap", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  t.pause(1_020_000);
+  t.resume(1_025_000);
+  assert.equal(t.played(1_040_000), 35);
+  assert.equal(t.remaining(1_040_000), 25);
+});
+
+test("pause on already paused timer is no-op", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  t.pause(1_010_000);
+  t.pause(1_020_000);
+  assert.equal(t.isRunning(), false);
+  assert.equal(t.played(1_020_000), 10);
+  assert.equal(t.remaining(1_020_000), 50);
+});
+
+test("addSeconds with negative value", () => {
+  const t = createTimer(60);
+  t.start(1_000_000);
+  t.addSeconds(-10);
+  assert.equal(t.remaining(1_000_000), 50);
 });
