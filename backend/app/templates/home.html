@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Woodshed — Home{% endblock %}
+
+{% block content %}
+<h1>Practice</h1>
+
+<section class="home-progress">
+    <progress value="{{ week_minutes }}" max="{{ goal }}"></progress>
+    <span>{{ week_minutes }} of {{ goal }} min</span>
+</section>
+
+{% if routines %}
+<ul class="home-routine-list">
+    {% for r in routines %}
+    <li class="home-routine-item{% if r.most_recent %} home-routine-item--primary{% endif %}">
+        <a href="/run/{{ r.id }}?autostart=1" class="home-start-btn">
+            <span class="home-start-btn__title">{{ r.name }}</span>
+            <span class="home-start-btn__meta">{{ r.block_count }} block{{ "s" if r.block_count != 1 }}, {{ r.total_minutes }} min</span>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="library-empty">No routines yet. <a href="/routines/new">Create one</a>.</p>
+{% endif %}
+{% endblock %}

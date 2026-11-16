@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     SESSION_SECRET: str = DEV_SESSION_SECRET
     MEDIA_DIR: Path = Path(".media")
     LOG_LEVEL: str = "INFO"
+    MAX_ATTACHMENT_BYTES: int = 100 * 1024 * 1024  # 100 MB
 
 
 def check_production(settings: Settings) -> None:

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Woodshed — Settings{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+<form method="post" action="/settings">
+    <div class="field">
+        <label for="weekly_goal_minutes">Weekly goal (minutes)</label>
+        {% if error %}
+        <span class="error">{{ error }}</span>
+        {% endif %}
+        <input type="number" name="weekly_goal_minutes" id="weekly_goal_minutes"
+               value="{{ value }}" min="0" max="10080" required>
+        <span class="hint">0–10080 minutes (7 days)</span>
+    </div>
+    <button type="submit">Save</button>
+</form>
+{% endblock %}

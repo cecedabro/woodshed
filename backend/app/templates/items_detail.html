@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% from "macros.html" import render_tempo_svg %}
+
+{% block title %}Woodshed — {{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="item-detail">
+    <div class="item-header">
+        <h1>{{ item.title }}</h1>
+        {% if edit_link %}
+        <a href="{{ edit_link }}" class="edit-link">Edit</a>
+        {% endif %}
+        <a href="/run/item/{{ item.id }}?minutes=10" class="btn">Practise this</a>
+    </div>
+
+    <dl class="item-fields">
+        <div class="field-row">
+            <dt>Kind</dt>
+            <dd>{{ item.kind|capitalize }}</dd>
+        </div>
+
+        {% if item.artist %}
+        <div class="field-row">
+            <dt>Artist</dt>
+            <dd>{{ item.artist }}</dd>
+        </div>
+        {% endif %}
+
+        <div class="field-row">
+            <dt>Status</dt>
+            <dd>{{ item.status|capitalize }}</dd>
+        </div>
+
+        {% if item.current_bpm %}
+        <div class="field-row">
+            <dt>Current BPM</dt>
+            <dd>{{ item.current_bpm }}</dd>
+        </div>
+        {% endif %}
+
+        {% if item.original_url %}
+        <div class="field-row">
+            <dt>Original</dt>
+            <dd><a href="{{ item.original_url }}" target="_blank" rel="noopener">{{ item.original_url }}</a></dd>
+        </div>
+        {% endif %}
+
+        {% if item.notes %}
+        <div class="field-row">
+            <dt>Notes</dt>
+            <dd class="notes" id="notes">{{ item.notes|notes_br|safe }}</dd>
+        </div>
+        {% endif %}
+
+        <div class="field-row">
+            <dt>Created</dt>
+            <dd>{{ item.created_at|local_time }}</dd>
+        </div>
+
+        <div class="field-row">
+            <dt>Updated</dt>
+            <dd>{{ item.updated_at|local_time }}</dd>
+        </div>
+    </dl>
+
+    {% if tempo_history %}
+    <div class="tempo-section">
+        <h2>Tempo History</h2>
+        <p class="tempo-text">
+            {{ tempo_history|map(attribute=1)|join(' → ') }}
+        </p>
+        {{ render_tempo_svg(tempo_history)|safe }}
+    </div>
+    {% endif %}
+
+    {% if item.attachments %}
+    <div class="attachments-section">
+        <h2>Attachments</h2>
+
+        {% for kind in ["tab", "pdf", "audio"] %}
+            {% set group = item.attachments|selectattr("kind", "equalto", kind)|list %}
+            {% if group %}
+            <h3>{{ kind|capitalize }}</h3>
+            <ul class="attachment-list">
+            {% for att in group %}
+                <li class="attachment-item">
+                    <span class="attachment-label">{{ att.label or att.original_name }}</span>
+                    <span class="attachment-meta">{{ att.size_bytes }} bytes</span>
+                    <div class="attachment-actions">
+                        <a href="/attachments/{{ att.id }}/download" class="btn btn-sm">Download</a>
+                        <form method="post" action="/items/{{ item.id }}/attachments/{{ att.id }}/_delete" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="attachments-section">
+        <h3>Add attachment</h3>
+        <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data" class="upload-form">
+            <div class="field-row">
+                <label for="attach-file">File</label>
+                <input type="file" id="attach-file" name="file" required accept=".tab,.gtp,.htm,.html,.pdf,.mp3,.wav,.ogg,.m4a,.flac">
+            </div>
+            <div class="field-row">
+                <label for="attach-label">Label (optional)</label>
+                <input type="text" id="attach-label" name="label" placeholder="e.g. Slow version, Cover tab" maxlength="200">
+            </div>
+            <div class="field-row">
+                <button type="submit" class="btn">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
