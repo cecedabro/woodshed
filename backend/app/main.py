@@ -22,6 +22,7 @@ from app.routes import (
     routines_router,
     run_router,
     settings_router,
+    takes_router,
     tuner_router,
 )
 from app.security import SecurityMiddleware
@@ -174,6 +175,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tuner_router)
     app.include_router(api_router)
     app.include_router(sessions_router)
+    app.include_router(takes_router)
 
     return app
 

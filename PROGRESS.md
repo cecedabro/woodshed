@@ -245,3 +245,10 @@ don't read that file, search it with `rg` if you need something.
 - Created `backend/tests/test_titles.py` (15 tests) verifying "Woodshed" appears exactly once
   in `<title>` and zero times in `.navbar-title` for 7 routes, plus `/` has `<title>Woodshed</title>`.
 - All 594 tests pass, 97% coverage, `make check` clean.
+
+## T35: Takes upload fix — settings dependency & persistence
+- Fixed `POST /api/items/{item_id}/takes` in `backend/app/routes/takes.py`: replaced `settings: Settings = Depends(lambda: Settings())` with `request: Request` dependency and `request.app.state.settings` lookup, which resolved file persistence failures in tests (the old approach created a new Settings instance with the default MEDIA_DIR, ignoring the test fixture's tmp_path).
+- Added `file.filename is None` guard (415 response) for type safety with mypy.
+- Fixed exception chaining (`TooLarge as e` → `raise ... from e`) per bandit B904.
+- Removed unused imports (`BaseModel`, `select`, `Settings`, `Item`).
+- All 621 tests pass, 96% coverage, `make check` clean.

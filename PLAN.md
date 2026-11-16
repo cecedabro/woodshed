@@ -185,7 +185,7 @@ The Tuner tab is now labelled "Tools" (base.html, done by hand); it holds the tu
   accept: cd backend && node --check app/static/js/metronome-page.js && node --test tests/js/metronome-prefs.test.js
 
 ## Round 3 (rest): takes
-- [ ] T35: Takes upload (SPEC 8.2) in `app/takes.py`: `sniff_audio(first_bytes) -> "webm"|"mp4"|"ogg"|None`, `POST /api/items/{id}/takes`. Add `MAX_TAKE_BYTES` (default 25 MB) to Settings. Write `tests/test_takes_upload.py` (each of the three formats with crafted header bytes → 201, row + file; wrong bytes → 415; declared mp4 with WebM bytes → 415; too big → 413; duration 0 and 601 → 422).
+- [x] T35: Takes upload (SPEC 8.2) in `app/takes.py`: `sniff_audio(first_bytes) -> "webm"|"mp4"|"ogg"|None`, `POST /api/items/{id}/takes`. Add `MAX_TAKE_BYTES` (default 25 MB) to Settings. Write `tests/test_takes_upload.py` (each of the three formats with crafted header bytes → 201, row + file; wrong bytes → 415; declared mp4 with WebM bytes → 415; too big → 413; duration 0 and 601 → 422).
   accept: cd backend && uv run pytest tests/test_takes_upload.py -q
 - [ ] T36: `static/js/recorder.js` `pickMimeType` + glue (SPEC 8.1): one record button (on the runner and the item page) that toggles recording, shows elapsed time, stops at 600 s and uploads with the current BPM and block. Write `tests/js/recorder.test.js` (Safari-like support → `audio/mp4`; nothing supported → "").
   accept: cd backend && node --test tests/js/recorder.test.js && node --check app/static/js/recorder.js
