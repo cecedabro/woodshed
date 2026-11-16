@@ -170,10 +170,10 @@ function createFakeAudioContext() {
   let fakeCurrentTime = 0;
   let state = "running";
   let gainNode = null;
-   const oscillators = [];
-   const gains = [];
-   const scheduleTimes = [];
-   const playCueTimes = [];
+  const oscillators = [];
+  const gains = [];
+  const scheduleTimes = [];
+  const playCueTimes = [];
   let resumed = false;
   let closed = false;
 
@@ -196,7 +196,6 @@ function createFakeAudioContext() {
         start(at) {
           oscStarted = true;
           oscStartAt = at;
-          // Record the scheduled beat (frequency is already set by this point)
           scheduleTimes.push({
             freq: _oscFreq,
             start: at,
@@ -206,7 +205,6 @@ function createFakeAudioContext() {
         },
         stop(at) {
           oscStoppedAt = at;
-          // Update the last scheduled entry's stop time
           const last = scheduleTimes[scheduleTimes.length - 1];
           if (last) {
             last.stop = at;
@@ -444,11 +442,224 @@ test("Metronome beatTimes integration — 200 ms spacing at 300 BPM", () => {
   fake.advanceTime(0.2);
   m._tick();
 
-  // beatTimes(nowMs=200, scheduleAhead=50, lookAhead=100) → [250, 300)
-  // interval = 60000/300 = 200ms
-  // beat 0: 250+0*200=250 ✓, beat 1: 450 ✗ (>300)
-  assert.equal(fake.scheduleTimes.length, 1);
-  assert.equal(fake.scheduleTimes[0].freq, 1000);
+  // start() schedules beat 0 at time 50ms (nowMs=0)
+  // after 0.2s, _tick() schedules beat 1 at time 250ms (nowMs=200)
+  assert.equal(fake.scheduleTimes.length, 2);
+  assert.equal(fake.scheduleTimes[0].freq, 1000, "beat 0 is accent");
+  assert.equal(fake.scheduleTimes[1].freq, 800, "beat 1 is not accent");
+
+  m.stop();
+});
+
+// --- Metronome class tests: fixed startTime and onBeat ---
+
+/**
+ * Advance the fake context by 0.025 s and call metronome._tick().
+ * Returns the fake context for chaining.
+ */
+function tickAndAdvance(fake, metronome) {
+  fake.advanceTime(0.025);
+  metronome._tick();
+  return fake;
+}
+
+/**
+ * Advance the fake context by `n` ticks (0.025 s each) and call _tick each time.
+ */
+function runTicks(fake, metronome, n) {
+  for (let i = 0; i < n; i++) {
+    tickAndAdvance(fake, metronome);
+  }
+}
+
+test("Metronome onBeat callback is invoked with beat and accent", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const beats = [];
+  m.onBeat((info) => beats.push(info));
+
+  m.start(60); // 1 beat per second
+
+  // Advance enough to capture a few beats (4 seconds to get beat index 4)
+  runTicks(fake, m, 160);
+
+  assert.ok(beats.length > 0, "onBeat should have been called");
+  assert.equal(beats[0].beat, 0, "first beat should be beat 0");
+  assert.equal(beats[0].accent, true, "first beat should be accented");
+  assert.equal(beats[1].beat, 1, "second beat should be beat 1");
+  assert.equal(beats[1].accent, false, "second beat should not be accented");
+  assert.equal(beats[4].accent, true, "beat 4 (index 4 % 4 === 0) should be accented");
+
+  m.stop();
+});
+
+test("Metronome 3 s at 120 BPM schedules exactly 6 clicks, 0.5 s apart", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const clickTimes = [];
+  m.onBeat((info) => clickTimes.push(info.time));
+
+  m.start(120); // 500 ms per beat
+
+  // 3 seconds / 0.025 = 120 ticks, but 118 ticks (2.95s) prevents beat 6 (3050ms) from being scheduled
+  runTicks(fake, m, 118);
+
+  assert.equal(clickTimes.length, 6, "should have exactly 6 clicks");
+
+  // Check 0.5 s spacing
+  for (let i = 1; i < clickTimes.length; i++) {
+    const diff = clickTimes[i] - clickTimes[i - 1];
+    assert.ok(Math.abs(diff - 500) < 1, `click spacing should be ~500ms, got ${diff}`);
+  }
+
+  m.stop();
+});
+
+test("Metronome 3 s at 120 BPM — no duplicate clicks", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const clickTimes = [];
+  m.onBeat((info) => clickTimes.push(info.time));
+
+  m.start(120);
+
+  runTicks(fake, m, 118);
+
+  // All click times should be unique
+  const unique = new Set(clickTimes);
+  assert.equal(unique.size, clickTimes.length, "no duplicate clicks");
+
+  m.stop();
+});
+
+test("Metronome 3 s at 120 BPM — accent on beats 0 and 4", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const beatInfo = [];
+  m.onBeat((info) => beatInfo.push(info));
+
+  m.start(120);
+
+  runTicks(fake, m, 120);
+
+  // Beat 0 should be accented, beats 1-3 not, beat 4 accented
+  assert.equal(beatInfo[0].accent, true, "beat 0 should be accented");
+  assert.equal(beatInfo[1].accent, false, "beat 1 should not be accented");
+  assert.equal(beatInfo[2].accent, false, "beat 2 should not be accented");
+  assert.equal(beatInfo[3].accent, false, "beat 3 should not be accented");
+  assert.equal(beatInfo[4].accent, true, "beat 4 should be accented");
+
+  m.stop();
+});
+
+test("Metronome setBpm(60) after 1 s — next click 1 s after previous", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const beatTimes_list = [];
+  m.onBeat((info) => beatTimes_list.push(info.time));
+
+  m.start(120); // 500 ms per beat
+
+  // Advance ~1 second (40 ticks = 1.0 s)
+  runTicks(fake, m, 40);
+
+  // Change BPM to 60 (1000 ms interval)
+  m.setBpm(60);
+
+  // Continue running to capture the next beats
+  runTicks(fake, m, 40);
+
+  // At 120 BPM: beats at 50, 550, 1050
+  // After setBpm(60) at ~0.975s, _startTime is recalculated
+  // The first 60 BPM beat after the transition should be ~1000ms after the last 120 BPM beat (1050)
+  const last120Time = 1050; // last beat before BPM change
+  // Find first beat with time >= 1050 + 500 (i.e. after the 120 BPM sequence)
+  const firstAfterChangeIdx = beatTimes_list.findIndex(t => t > last120Time);
+  assert.ok(firstAfterChangeIdx >= 0, "should have beats after BPM change");
+  const gap = beatTimes_list[firstAfterChangeIdx] - beatTimes_list[firstAfterChangeIdx - 1];
+  assert.ok(Math.abs(gap - 1000) < 50, `gap at BPM change should be ~1000ms, got ${gap}`);
+
+  m.stop();
+});
+
+test("Metronome stop() schedules nothing more", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const clickTimes = [];
+  m.onBeat(() => clickTimes.push(fake.currentTime * 1000));
+
+  m.start(120);
+
+  // Get some clicks scheduled
+  runTicks(fake, m, 40);
+  const countBefore = fake.scheduleTimes.length;
+
+  // Stop the metronome
+  m.stop();
+
+  // Advance time — no new beats should be scheduled
+  runTicks(fake, m, 40);
+  const countAfter = fake.scheduleTimes.length;
+
+  assert.equal(countBefore, countAfter, "stop() should prevent further scheduling");
+
+  m.stop();
+});
+
+test("Metronome onBeat returns correct accent pattern for beatsPerBar 3", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const accents = [];
+  m.onBeat((info) => accents.push(info.accent));
+
+  m.start(60); // 1 beat per second
+  m.setBeatsPerBar(3);
+
+  runTicks(fake, m, 200); // ~5 seconds
+
+  // With beatsPerBar=3: accent on beats 0, 3, 6, 9, ...
+  for (let i = 0; i < accents.length; i++) {
+    const expectedAccent = (i % 3 === 0);
+    assert.equal(accents[i], expectedAccent, `beat ${i} accent should be ${expectedAccent}`);
+  }
+
+  m.stop();
+});
+
+test("Metronome fixed startTime — beats don't drift across ticks", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+  const beatTimes_list = [];
+  m.onBeat((info) => beatTimes_list.push(info.time));
+
+  m.start(60); // 1 beat per second
+
+  // Run for 4 seconds — prevents last beat (50 + 4*1000 = 4050) from being caught by look-ahead
+  runTicks(fake, m, 160);
+
+  // With a fixed startTime, beats should be exactly 1000ms apart
+  assert.ok(beatTimes_list.length >= 4, "should have at least 4 beats");
+  for (let i = 1; i < beatTimes_list.length; i++) {
+    const diff = beatTimes_list[i] - beatTimes_list[i - 1];
+    assert.ok(Math.abs(diff - 1000) < 2, `beat spacing should be ~1000ms, got ${diff} at gap ${i}`);
+  }
+
+  m.stop();
+});
+
+test("Metronome setBpm updates nextBeat and startTime", () => {
+  const fake = createFakeAudioContext();
+  const m = new Metronome(fake.ctx);
+
+  m.start(120);
+  fake.advanceTime(0.5); // advance 0.5s so setBpm has a non-zero nowMs
+  const startTimeBefore = m._startTime;
+  assert.ok(startTimeBefore > 0, "startTime should be set after start()");
+
+  m.setBpm(60);
+  const startTimeAfter = m._startTime;
+  assert.ok(startTimeAfter > 0, "startTime should be recalculated after setBpm");
+  assert.equal(m._nextBeatIndex, 0, "nextBeatIndex should be reset to 0");
 
   m.stop();
 });
