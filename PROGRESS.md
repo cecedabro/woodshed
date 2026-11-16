@@ -366,3 +366,14 @@ Appended by the agent after each task: what changed, where, and gotchas for late
 - `backend/tests/js/runner.test.js`: updated `now` values from seconds (1000) to ms (1_000_000)
   throughout so the runner's timer calls get correct ms→s conversion.
 
+## T55 — Runner flow test (SPEC 5.3–5.4)
+- `backend/app/static/js/runner.js` (`_logCurrentBlock`): wrapped `played` with
+  `Math.round(played)` in both `deps.api.logBlock()` and `loggedBlocks.push()` so
+  `played_seconds` is always an integer on the wire.
+- `backend/tests/js/run-flow.test.js`: new test with 3 subtests — continuous flow
+  (tick every 250ms, no logs before 60s, one cue + logBlock at 60s, second block at 120s,
+  finish called once) and pause scenario (10s pause in block 1 → end moves to 70s,
+  `played_seconds` = 60). Session ID must be awaited after `runner.start()` via
+  `await Promise.resolve()` before first tick.
+- `make check` passes (ruff, mypy, pytest 98.5%, jscheck, bandit).
+
