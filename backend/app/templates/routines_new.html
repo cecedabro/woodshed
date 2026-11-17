@@ -1,18 +1,20 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
+{% extends "base.html" %}
 
 {% block title %}Woodshed — New Routine{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Back", "/routines", back=True) }}{% endblock %}
 
 {% block content %}
-<h1>New Routine</h1>
-<form method="post" action="/routines/new">
-    <div class="field">
-        <label for="name">Name</label>
-        {% if errors and 'name' in errors %}
-        <span class="error">{{ errors['name'] }}</span>
-        {% endif %}
-        <input type="text" name="name" id="name" placeholder="Routine name"
-               value="{{ routine.name if routine else '' }}" required>
+<div class="stack-lg">
+  <h2>New Routine</h2>
+
+  <form method="post" action="/routines/new">
+    {% call ui.group() %}
+      {{ ui.field("name", "Name", required=True, placeholder="Routine name", error=errors.get("name") if errors else None) }}
+    {% endcall %}
+    <div class="actions actions-end">
+      {{ ui.button("Create", kind="primary", type="submit") }}
     </div>
-    <button type="submit">Create</button>
-</form>
+  </form>
+</div>
 {% endblock %}

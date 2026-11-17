@@ -1,26 +1,18 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
+{% extends "base.html" %}
 
-{% block title %}Woodshed — Routines{% endblock %}
-
+{% block title %}Routines{% endblock %}
+{% block nav_right %}{{ ui.nav_link("New routine", "/routines/new", icon_name="plus") }}{% endblock %}
 {% block content %}
-<h1>Routines</h1>
-
-<a href="/routines/new" class="btn">New Routine</a>
-
-{% if routines %}
-<ul class="routine-list">
+{% call ui.section() %}
+  {% if routines %}
+  {% call ui.group() %}
     {% for r in routines %}
-    <li class="routine-item">
-        <a href="/routines/{{ r.id }}/edit">{{ r.name }}</a>
-        <span class="routine-meta">{{ r.total_minutes }} min · {{ r.block_count }} block{{ "s" if r.block_count != 1 }}</span>
-        <form method="post" action="/routines/{{ r.id }}/delete" class="inline-form"
-              onsubmit="return confirm('Delete routine \'{{ r.name }}\'?')">
-            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-        </form>
-    </li>
+    {{ ui.row(r.name, sub=r.block_count ~ " blocks · " ~ r.total_minutes ~ " min", href="/routines/" ~ r.id ~ "/edit") }}
     {% endfor %}
-</ul>
-{% else %}
-<p class="library-empty">No routines yet. <a href="/routines/new">Create one</a>.</p>
-{% endif %}
+  {% endcall %}
+  {% else %}
+  {{ ui.empty("No routines yet", "A routine is a list of blocks: what to play and for how long.", "/routines/new", "New routine", icon_name="routines") }}
+  {% endif %}
+{% endcall %}
 {% endblock %}

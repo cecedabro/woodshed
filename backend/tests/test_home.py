@@ -111,8 +111,8 @@ def test_home_routines_ordered_by_last_session(client: TestClient, db: Session) 
     assert new_pos < old_pos, "Most recently practised routine should appear first"
 
 
-def test_home_most_recent_has_primary_class(client: TestClient, db: Session) -> None:
-    """The most recently practised routine gets the 'home-routine-item--primary' CSS class."""
+def test_home_first_routine_has_start_class(client: TestClient, db: Session) -> None:
+    """The first (most recent) routine is rendered with class 'start'."""
     session = PracticeSession(
         routine_id=None,
         started_at=datetime(2025, 6, 1, tzinfo=UTC),
@@ -129,7 +129,14 @@ def test_home_most_recent_has_primary_class(client: TestClient, db: Session) -> 
     _login(client)
     resp = client.get("/")
 
-    assert 'class="home-routine-item home-routine-item--primary"' in resp.text
+    assert 'class="start"' in resp.text
+
+
+def test_home_progress_shows_of_goal(client: TestClient, db: Session) -> None:
+    """The home page shows the progress text 'X of Y min' (default 120)."""
+    _login(client)
+    resp = client.get("/")
+    assert "of 120 min" in resp.text
 
 
 def test_home_button_links_to_run_with_autostart(client: TestClient, db: Session) -> None:

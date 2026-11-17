@@ -43,6 +43,10 @@ class Item(Base):
         default="learning",
     )
     current_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    mbid: Mapped[str | None] = mapped_column(String, nullable=True)
+    release_group_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    has_cover: Mapped[bool] = mapped_column(default=False)
     original_url: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(

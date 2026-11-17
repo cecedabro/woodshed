@@ -1,437 +1,354 @@
-// Run-page glue module — wires runner.js + Metronome to the DOM.
-// Loads as `<script type="module">` from run.html.
+// Run page glue: wires runner.js and the Metronome to run.html (docs/design.md runner recipe).
+// Decisions about what to show live in runner-view.js (pure, tested); this file only applies them.
 
 import { createRunner } from "./runner.js";
-import { clampBpm, Metronome } from "./metronome.js";
+import { clampBpm, Metronome, tapTempo } from "./metronome.js";
+import { beatIndex, formatTime, linksHidden, runnerView } from "./runner-view.js";
 
-// --- localStorage keys (SPEC 6.3) ---
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => [...document.querySelectorAll(sel)];
+
+// --- Metronome preferences (SPEC 6.3) ---
 
 const LS_VOLUME = "woodshed_metronome_volume";
 const LS_ON = "woodshed_metronome_on";
 
-function loadMetronomePrefs() {
-  let volume = 0.5;
+function loadPrefs() {
+  let volume = 0.7;
   let on = true;
   try {
-    const v = localStorage.getItem(LS_VOLUME);
-    if (v !== null) volume = Math.max(0, Math.min(1, parseFloat(v) || 0.5));
+    const v = parseFloat(localStorage.getItem(LS_VOLUME));
+    if (!Number.isNaN(v)) volume = Math.max(0, Math.min(1, v));
     const o = localStorage.getItem(LS_ON);
     if (o !== null) on = o === "true";
   } catch (_) { /* storage unavailable */ }
   return { volume, on };
 }
 
-function saveMetronomePrefs(volume, on) {
+function savePrefs() {
   try {
     localStorage.setItem(LS_VOLUME, String(volume));
-    localStorage.setItem(LS_ON, String(on));
+    localStorage.setItem(LS_ON, String(metronomeOn));
   } catch (_) { /* storage unavailable */ }
-}
-
-// --- DOM helpers ---
-
-function $(sel) {
-  return document.querySelector(sel);
-}
-
-function $$(sel) {
-  return document.querySelectorAll(sel);
-}
-
-function formatTime(ms) {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 // --- Wake lock (SPEC 5.9) ---
 
 let wakeLock = null;
-
 async function requestWakeLock() {
   try {
-    if ("wakeLock" in navigator) {
-      wakeLock = await navigator.wakeLock.request("screen");
-    }
-  } catch (_) { /* wake lock not supported */ }
+    if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+  } catch (_) { /* not supported or refused */ }
 }
-
 function releaseWakeLock() {
-  if (wakeLock) {
-    wakeLock.release().catch(() => {});
-    wakeLock = null;
-  }
+  if (wakeLock) wakeLock.release().catch(() => {});
+  wakeLock = null;
 }
-
-// Restore wake lock on visibility change
-document.addEventListener("visibilitychange", async () => {
-  if (!document.hidden && wakeLocking) {
-    await requestWakeLock();
-  }
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && running) requestWakeLock();
 });
 
-let wakeLocking = false;
+// --- API (SPEC 5.4). Calls run one after another, so "finish" never overtakes a block. ---
 
-// --- API helpers ---
-
-async function startSessionApi() {
-  const routineIdVal = runnerEl.dataset.routineId;
-  const routine_id = routineIdVal === "null" ? null : parseInt(routineIdVal || "0", 10);
-  const res = await fetch("/api/sessions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ routine_id }),
-  });
-  if (!res.ok) throw new Error("Failed to start session");
-  const data = await res.json();
-  return data.id;
+let apiQueue = Promise.resolve();
+function queued(fn) {
+  const next = apiQueue.then(fn, fn);
+  apiQueue = next.catch(() => {});
+  return next;
 }
 
-async function logBlockApi(sessionId, data) {
-  await fetch(`/api/sessions/${sessionId}/blocks`, {
+async function postJson(url, body) {
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
-}
-
-async function finishApi(sessionId) {
-  const res = await fetch(`/api/sessions/${sessionId}/finish`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!res.ok) throw new Error("Failed to finish session");
+  if (!res.ok) throw new Error(`${url}: ${res.status}`);
   return res.json();
 }
 
-// --- Init ---
+const api = {
+  startSession: () =>
+    queued(async () => (await postJson("/api/sessions", { routine_id: routineId })).id),
+  logBlock: (sid, data) => queued(() => postJson(`/api/sessions/${sid}/blocks`, data)),
+  finish: (sid) =>
+    queued(() => postJson(`/api/sessions/${sid}/finish`)).then(showSummary, () => showSummary(null)),
+};
+
+// --- Page state ---
 
 const runnerEl = $(".runner");
-if (!runnerEl) throw new Error("No .runner element found");
+const blocks = JSON.parse(runnerEl.dataset.blocks || "[]");
+const routineId = /^\d+$/.test(runnerEl.dataset.routineId || "")
+  ? parseInt(runnerEl.dataset.routineId, 10)
+  : null;
 
-const blocksData = JSON.parse(runnerEl.dataset.blocks || "[]");
-const routineName = runnerEl.querySelector("h1")?.textContent || "Session";
+const el = {
+  navTitle: $(".navbar-title"),
+  end: $(".navbar-left a"),
+  blocks: $$("#run-blocks span"),
+  title: $("#run-title"),
+  sub: $("#run-sub"),
+  time: $("#run-time"),
+  bar: $("#run-bar"),
+  note: $("#run-note"),
+  beats: $("#run-beats"),
+  main: $("#run-main"),
+  plus: $("#run-plus"),
+  skip: $("#run-skip"),
+  links: $$("#run-links [data-block]"),
+  bpm: $("#run-bpm"),
+  tap: $("#run-tap"),
+  metronome: $("#run-metronome"),
+  volume: $("#run-volume"),
+  summary: $("#run-summary"),
+  icons: [...($("#run-icons")?.content.children || [])], // [play, pause]
+};
 
-// --- State ---
-
-const { volume: defaultVolume, on: defaultOn } = loadMetronomePrefs();
-let metronomeOn = defaultOn;
-let currentVolume = defaultVolume;
-let beatsPerBar = 4;
-let sessionSummary = null;
-let runner = null;
+const prefs = loadPrefs();
+let volume = prefs.volume;
+let metronomeOn = prefs.on;
+let beatsPerBar = parseInt($('input[name="beats"]:checked')?.value || "4", 10);
+let bpm = blocks[0]?.start_bpm ?? 80;
+let started = false;
+let running = false;
+let finished = false;
+let shownIndex = 0;
+let taps = [];
+let tickTimer = null;
+let audioCtx = null;
 let metronome = null;
-let tickInterval = null;
-let tapTaps = [];
-let sessionId = null;
+let clicking = false;
 
-// --- DOM element references ---
+const runner = createRunner(blocks, {
+  api,
+  now: () => Date.now(),
+  cue: () => metronome?.playCue(),
+  bpmToLog: (b) => (metronomeOn ? b : null),
+});
 
-let timerDisplay = null;
-let bpmDisplay = null;
-let currentBlockTitle = null;
-let bpmMinus5Btn = null;
-let bpmMinus1Btn = null;
-let bpmPlus1Btn = null;
-let bpmPlus5Btn = null;
-let tapTempoBtn = null;
-let beatsPerBarSelect = null;
-let metronomeToggleBtn = null;
-let volumeSlider = null;
-let summaryEl = null;
+// --- Rendering ---
 
-function findDomElements() {
-  timerDisplay = $(".timer-display") || $(".block-timer");
-  bpmDisplay = $(".bpm-display") || $(".block-bpm-display");
-  currentBlockTitle = $(".current-block-title");
-  bpmMinus5Btn = $("#bpm-minus-5");
-  bpmMinus1Btn = $("#bpm-minus-1");
-  bpmPlus1Btn = $("#bpm-plus-1");
-  bpmPlus5Btn = $("#bpm-plus-5");
-  tapTempoBtn = $("#tap-tempo");
-  beatsPerBarSelect = $("#beats-per-bar");
-  metronomeToggleBtn = $("#metronome-toggle");
-  volumeSlider = $("#metronome-volume");
-  summaryEl = $(".session-summary");
+function setText(node, text) {
+  if (node && node.textContent !== text) node.textContent = text;
 }
 
-// --- Summary view ---
+function render() {
+  if (finished) return;
+  const state = runner.current();
+  const index = started ? state.index : 0;
+  const remaining = started ? state.remaining : (blocks[0]?.planned_seconds ?? 0);
+  const view = runnerView({ started, index, paused: state.paused, remaining }, blocks, beatsPerBar);
+  el.blocks.forEach((span, i) => { span.className = view.blocks[i] || ""; });
+  setText(el.navTitle, view.title);
+  setText(el.main?.querySelector("span"), view.main);
+  const icon = view.main === "Pause" ? el.icons[1] : el.icons[0];
+  const svg = el.main?.querySelector("svg");
+  if (icon && svg && !svg.isEqualNode(icon)) svg.replaceWith(icon.cloneNode(true));
+  setText(el.title, view.blockTitle);
+  setText(el.sub, view.next);
+  setText(el.time, view.time);
+  setText(el.note, view.of);
+  if (el.bar) el.bar.value = view.used;
+  const hidden = linksHidden(el.links.map((a) => parseInt(a.dataset.block, 10)), index);
+  el.links.forEach((a, i) => { a.hidden = hidden[i]; });
+  setText(el.bpm, String(bpm));
+}
+
+function renderBeatDots() {
+  if (!el.beats) return;
+  el.beats.replaceChildren(
+    ...Array.from({ length: beatsPerBar }, () => document.createElement("span")),
+  );
+}
+
+function lightBeat(beat, timeMs) {
+  if (!el.beats) return;
+  // Beats are scheduled ahead; light the dot when the click is actually heard.
+  const delay = Math.max(0, timeMs - audioCtx.currentTime * 1000);
+  setTimeout(() => {
+    if (!clicking) return;
+    const on = beatIndex(beat, beatsPerBar);
+    [...el.beats.children].forEach((s, i) => s.classList.toggle("is-on", i === on));
+  }, delay);
+}
+
+// --- Metronome ---
+
+function ensureMetronome() {
+  if (metronome) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new Ctx();
+  metronome = new Metronome(audioCtx);
+  metronome.setVolume(volume);
+  metronome.setBeatsPerBar(beatsPerBar);
+  metronome.onBeat(({ beat, time }) => lightBeat(beat, time));
+}
+
+function syncMetronome() {
+  if (!metronome) return;
+  const shouldClick = running && metronomeOn && !runner.current().paused;
+  if (shouldClick && !clicking) metronome.start(bpm);
+  if (!shouldClick && clicking) {
+    metronome.stop();
+    [...(el.beats?.children || [])].forEach((s) => s.classList.remove("is-on"));
+  }
+  clicking = shouldClick;
+}
+
+function setBpm(next) {
+  bpm = clampBpm(next);
+  runner.setBpm(bpm);
+  if (clicking) metronome.setBpm(bpm);
+  render();
+}
+
+// --- Session flow ---
+
+function tick() {
+  runner.tick();
+  const state = runner.current();
+  if (state.index === null) {
+    stop();
+    return;
+  }
+  if (state.index !== shownIndex) {
+    // A new block started with its own start BPM.
+    shownIndex = state.index;
+    bpm = blocks[shownIndex].start_bpm ?? 80;
+    runner.setBpm(bpm);
+    if (clicking) metronome.setBpm(bpm);
+  }
+  render();
+}
+
+function start() {
+  started = true;
+  running = true;
+  ensureMetronome();
+  runner.start();
+  runner.setBpm(bpm);
+  requestWakeLock();
+  tickTimer = setInterval(tick, 250);
+  syncMetronome();
+  render();
+}
+
+function stop() {
+  running = false;
+  if (tickTimer) clearInterval(tickTimer);
+  tickTimer = null;
+  syncMetronome();
+  releaseWakeLock();
+}
 
 function showSummary(summary) {
-  if (!summaryEl) return;
-  sessionSummary = summary;
-
-  const rows = [];
-  for (const block of summary.blocks || []) {
-    const mins = (block.played_seconds / 60).toFixed(1);
-    const bpmStr = block.bpm != null ? `${block.bpm} BPM` : "—";
-    rows.push(`<tr><td>${block.title}</td><td>${mins} min</td><td>${bpmStr}</td></tr>`);
-  }
-
-  const totalMins = summary.total_minutes != null ? summary.total_minutes.toFixed(1) : "0";
-  summaryEl.innerHTML = `
-    <h2>Session complete</h2>
-    <table class="summary-table">
-      <thead><tr><th>Block</th><th>Played</th><th>BPM</th></tr></thead>
-      <tbody>${rows.join("")}</tbody>
-    </table>
-    <p class="summary-total">Total: ${totalMins} min</p>
-    <a href="/" class="btn">Back home</a>
-  `;
-  summaryEl.style.display = "block";
-  if (runnerEl) runnerEl.style.display = "none";
-}
-
-// --- Runner initialisation ---
-
-function initRunner() {
-  const deps = {
-    api: {
-      startSession: startSessionApi,
-      logBlock: logBlockApi,
-      finish: finishApi,
-    },
-    now: () => Date.now(),
-    cue: () => {
-      if (metronome && metronomeOn) {
-        metronome.playCue();
-      }
-    },
+  stop();
+  finished = true;
+  if (!el.summary) return;
+  const row = (title, sub, value, href) => {
+    const r = document.createElement(href ? "a" : "div");
+    r.className = "row";
+    if (href) r.href = href;
+    const main = document.createElement("span");
+    main.className = "row-main";
+    const t = document.createElement("span");
+    t.className = "row-title";
+    t.textContent = title;
+    main.append(t);
+    if (sub) {
+      const s = document.createElement("span");
+      s.className = "row-sub";
+      s.textContent = sub;
+      main.append(s);
+    }
+    r.append(main);
+    if (value) {
+      const v = document.createElement("span");
+      v.className = "row-value";
+      v.textContent = value;
+      r.append(v);
+    }
+    return r;
   };
-
-  runner = createRunner(blocksData, deps);
+  const section = document.createElement("section");
+  section.className = "section";
+  const header = document.createElement("h2");
+  header.className = "section-header";
+  header.textContent = "Done";
+  const group = document.createElement("div");
+  group.className = "group";
+  for (const b of summary?.per_block || []) {
+    group.append(row(b.item_title, formatTime(b.played_seconds), b.bpm != null ? `${b.bpm} bpm` : "—"));
+  }
+  group.append(row("Back home", null, null, "/"));
+  const footer = document.createElement("p");
+  footer.className = "section-footer";
+  footer.textContent = summary ? `${summary.minutes} min in total` : "Could not load the summary.";
+  section.append(header, group, footer);
+  el.summary.replaceChildren(section);
+  for (const child of runnerEl.children) child.hidden = child !== el.summary;
+  el.summary.hidden = false;
+  setText(el.navTitle, "Done");
 }
 
-// --- Metronome initialisation ---
+// --- Controls ---
 
-function initMetronome() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  metronome = new Metronome(ctx);
-  metronome.setVolume(currentVolume);
-  metronome.setBeatsPerBar(beatsPerBar);
+el.main?.addEventListener("click", () => {
+  if (!started) start();
+  else if (runner.current().paused) runner.resume();
+  else runner.pause();
+  syncMetronome();
+  render();
+});
+el.plus?.addEventListener("click", () => {
+  runner.addMinute();
+  render();
+});
+el.skip?.addEventListener("click", () => {
+  if (!started || finished) return;
+  runner.skip();
+  tick();
+});
+el.end?.addEventListener("click", (event) => {
+  if (!started || finished) return; // not started yet: just leave
+  event.preventDefault();
+  runner.finish(); // logs the block in progress; api.finish then shows the summary
+  stop();
+});
+
+for (const btn of $$('[data-for="run-bpm"]')) {
+  btn.addEventListener("click", () => setBpm(bpm + parseInt(btn.dataset.step, 10)));
 }
-
-// --- Countdown update ---
-
-function updateCountdown() {
-  if (!timerDisplay || !runner) return;
-  const state = runner.current();
-  timerDisplay.textContent = formatTime(state.remaining);
+for (const btn of $$("[data-bpm]")) {
+  btn.addEventListener("click", () => setBpm(bpm + parseInt(btn.dataset.bpm, 10)));
 }
-
-function updateBpmDisplay() {
-  if (!bpmDisplay || !runner) return;
-  const state = runner.current();
-  bpmDisplay.textContent = `${state.bpm} BPM`;
+el.tap?.addEventListener("click", () => {
+  taps = [...taps.slice(-7), Date.now()];
+  const tapped = tapTempo(taps);
+  if (tapped !== null) setBpm(tapped);
+});
+for (const radio of $$('input[name="beats"]')) {
+  radio.addEventListener("change", () => {
+    beatsPerBar = parseInt(radio.value, 10);
+    metronome?.setBeatsPerBar(beatsPerBar);
+    renderBeatDots();
+  });
 }
-
-// --- Tap tempo ---
-
-function handleTapTempo() {
-  const now = Date.now();
-  tapTaps.push(now);
-
-  // Remove taps older than 2 seconds from each other
-  // (tapTempo handles the gap filtering)
-  const bpm = tapTempo(tapTaps);
-  if (bpm !== null && runner) {
-    runner.setBpm(bpm);
-    updateBpmDisplay();
-  }
-}
-
-// --- BPM buttons ---
-
-function handleBpmChange(delta) {
-  if (!runner) return;
-  const state = runner.current();
-  const newBpm = clampBpm(state.bpm + delta);
-  runner.setBpm(newBpm);
-  updateBpmDisplay();
-}
-
-// --- Beat per bar ---
-
-function handleBeatsPerBarChange() {
-  if (!beatsPerBarSelect) return;
-  beatsPerBar = parseInt(beatsPerBarSelect.value, 10) || 4;
-  if (metronome) {
-    metronome.setBeatsPerBar(beatsPerBar);
-  }
-}
-
-// --- Metronome on/off ---
-
-function toggleMetronome() {
-  metronomeOn = !metronomeOn;
-  saveMetronomePrefs(currentVolume, metronomeOn);
-  if (metronomeToggleBtn) {
-    metronomeToggleBtn.textContent = metronomeOn ? "Metronome: ON" : "Metronome: OFF";
-  }
-  if (!metronomeOn && metronome) {
-    metronome.stop();
-  } else if (metronomeOn && metronome && runner && runner.current().done !== true) {
-    const state = runner.current();
-    if (state.index !== null && !state.done) {
-      const bpm = state.bpm || 80;
-      metronome.start(bpm);
-    }
-  }
-}
-
-// --- Volume ---
-
-function handleVolumeChange() {
-  if (!volumeSlider) return;
-  currentVolume = parseFloat(volumeSlider.value);
-  saveMetronomePrefs(currentVolume, metronomeOn);
-  if (metronome) {
-    metronome.setVolume(currentVolume);
-  }
-}
-
-// --- Start the session ---
-
-function startSession() {
-  if (runner) return; // already running
-
-  initRunner();
-  initMetronome();
-
-  wakeLocking = true;
-  requestWakeLock();
-
-  // Start runner
-  runner.start();
-  sessionId = runner.current().index !== null ? null : null;
-
-  // Start metronome for first block
-  if (metronomeOn) {
-    const state = runner.current();
-    const bpm = state.bpm || 80;
-    metronome.start(bpm);
-  }
-
-  // Start tick interval (250 ms)
-  tickInterval = setInterval(() => {
-    if (!runner) return;
-
-    const state = runner.current();
-
-    // Update countdown
-    updateCountdown();
-    updateBpmDisplay();
-
-    // Update metronome BPM if changed
-    if (metronome && state.bpm !== undefined) {
-      metronome.setBpm(state.bpm || 80);
-    }
-
-    // Update current block title
-    if (currentBlockTitle && state.title) {
-      currentBlockTitle.textContent = state.title;
-    }
-
-    // Update beats per bar select
-    if (beatsPerBarSelect) {
-      beatsPerBarSelect.value = String(beatsPerBar);
-    }
-
-    // Update metronome toggle
-    if (metronomeToggleBtn) {
-      metronomeToggleBtn.textContent = metronomeOn ? "Metronome: ON" : "Metronome: OFF";
-    }
-
-    // Update volume slider
-    if (volumeSlider) {
-      volumeSlider.value = String(currentVolume);
-    }
-
-    // Tick the runner
-    runner.tick();
-
-    // Check if session is done
-    const afterState = runner.current();
-    if (afterState.done && afterState.index === null) {
-      stopSession();
-    }
-  }, 250);
-}
-
-function stopSession() {
-  if (tickInterval) {
-    clearInterval(tickInterval);
-    tickInterval = null;
-  }
-  if (metronome) {
-    metronome.stop();
-  }
-  releaseWakeLock();
-  wakeLocking = false;
-}
-
-// --- Wire up block controls ---
-
-function wireBlockControls() {
-  const actions = runnerEl.querySelectorAll("[data-action]");
-  for (const btn of actions) {
-    const action = btn.dataset.action;
-
-    btn.addEventListener("click", () => {
-      if (action === "start") {
-        startSession();
-      } else if (action === "pause") {
-        if (runner) runner.pause();
-      } else if (action === "skip") {
-        if (runner) runner.skip();
-      }
-    });
-  }
-}
-
-// --- Wire up global controls ---
-
-function wireGlobalControls() {
-  if (bpmMinus5Btn) {
-    bpmMinus5Btn.addEventListener("click", () => handleBpmChange(-5));
-  }
-  if (bpmMinus1Btn) {
-    bpmMinus1Btn.addEventListener("click", () => handleBpmChange(-1));
-  }
-  if (bpmPlus1Btn) {
-    bpmPlus1Btn.addEventListener("click", () => handleBpmChange(1));
-  }
-  if (bpmPlus5Btn) {
-    bpmPlus5Btn.addEventListener("click", () => handleBpmChange(5));
-  }
-  if (tapTempoBtn) {
-    tapTempoBtn.addEventListener("click", handleTapTempo);
-  }
-  if (beatsPerBarSelect) {
-    beatsPerBarSelect.addEventListener("change", handleBeatsPerBarChange);
-  }
-  if (metronomeToggleBtn) {
-    metronomeToggleBtn.addEventListener("click", toggleMetronome);
-  }
-  if (volumeSlider) {
-    volumeSlider.addEventListener("input", handleVolumeChange);
-  }
-}
+el.metronome?.addEventListener("change", () => {
+  metronomeOn = el.metronome.checked;
+  savePrefs();
+  syncMetronome();
+});
+el.volume?.addEventListener("input", () => {
+  volume = parseFloat(el.volume.value);
+  savePrefs();
+  metronome?.setVolume(volume);
+});
 
 // --- Boot ---
 
-findDomElements();
-wireBlockControls();
-wireGlobalControls();
-
-// Set initial control states from localStorage
-if (metronomeToggleBtn) {
-  metronomeToggleBtn.textContent = metronomeOn ? "Metronome: ON" : "Metronome: OFF";
-}
-if (volumeSlider) {
-  volumeSlider.value = String(currentVolume);
-}
-if (beatsPerBarSelect) {
-  beatsPerBarSelect.value = String(beatsPerBar);
-}
+if (el.metronome) el.metronome.checked = metronomeOn;
+if (el.volume) el.volume.value = String(volume);
+renderBeatDots();
+render();

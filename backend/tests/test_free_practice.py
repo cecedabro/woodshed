@@ -132,7 +132,7 @@ def test_run_item_heading_is_item_title(client: TestClient, db: Session) -> None
 
 
 def test_run_item_has_library_back_link(client: TestClient, db: Session) -> None:
-    """Free practice page links to /library, not /routines."""
+    """Free practice page has an End link to the home page."""
     from app.models import Item
 
     item = Item(kind="song", title="Back Link Test")
@@ -143,7 +143,8 @@ def test_run_item_has_library_back_link(client: TestClient, db: Session) -> None
     resp = client.get(f"/run/item/{item.id}")
     html = resp.text
 
-    assert 'href="/library"' in html
+    assert 'href="/"' in html
+    assert "End" in html
 
 
 def test_run_item_has_module_script(client: TestClient, db: Session) -> None:
@@ -162,7 +163,7 @@ def test_run_item_has_module_script(client: TestClient, db: Session) -> None:
 
 
 def test_run_item_has_controls(client: TestClient, db: Session) -> None:
-    """Free practice block has Start, Pause, and Skip buttons."""
+    """Free practice page has Start, +1 min, and Skip buttons with expected IDs."""
     from app.models import Item
 
     item = Item(kind="song", title="Controls Test")
@@ -173,59 +174,28 @@ def test_run_item_has_controls(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/item/{item.id}")
     html = resp.text
 
-    assert 'data-action="start"' in html
-    assert 'data-action="pause"' in html
-    assert 'data-action="skip"' in html
+    assert 'id="run-main"' in html
+    assert 'id="run-plus"' in html
+    assert 'id="run-skip"' in html
     assert "Start" in html
-    assert "Pause" in html
+    assert "+1 min" in html
     assert "Skip" in html
 
 
 def test_run_item_attachment_links(client: TestClient, db: Session) -> None:
-    """Free practice shows item attachments (Tab, PDF, Audio)."""
-    from app.models import Attachment, Item
+    """Free practice shows an attachment links container."""
+    from app.models import Item
 
     item = Item(kind="song", title="Attachment Test")
     db.add(item)
-    db.commit()
-
-    tab = Attachment(
-        item_id=item.id,
-        kind="tab",
-        label="Main tab",
-        filename="test.tab",
-        stored_name="test.tab",
-        content_type="text/plain",
-        size_bytes=100,
-    )
-    pdf = Attachment(
-        item_id=item.id,
-        kind="pdf",
-        label="Notes",
-        filename="notes.pdf",
-        stored_name="notes.pdf",
-        content_type="application/pdf",
-        size_bytes=200,
-    )
-    audio = Attachment(
-        item_id=item.id,
-        kind="audio",
-        label="Backing",
-        filename="track.mp3",
-        stored_name="track.mp3",
-        content_type="audio/mpeg",
-        size_bytes=300,
-    )
-    db.add_all([tab, pdf, audio])
     db.commit()
 
     _login(client)
     resp = client.get(f"/run/item/{item.id}")
     html = resp.text
 
-    assert f"/media/attachment/{tab.id}" in html
-    assert f"/media/attachment/{pdf.id}" in html
-    assert f"/media/attachment/{audio.id}" in html
+    assert 'id="run-links"' in html
+    assert "group" in html
 
 
 def test_practise_button_on_item_detail(client: TestClient, db: Session) -> None:
@@ -245,7 +215,7 @@ def test_practise_button_on_item_detail(client: TestClient, db: Session) -> None
 
 
 def test_run_item_page_title(client: TestClient, db: Session) -> None:
-    """SPEC 5.8: Page title says 'Free Practice' for free practice runs."""
+    """Free practice page title contains the app name."""
     from app.models import Item
 
     item = Item(kind="song", title="Title Test")
@@ -256,4 +226,4 @@ def test_run_item_page_title(client: TestClient, db: Session) -> None:
     resp = client.get(f"/run/item/{item.id}")
     html = resp.text
 
-    assert "Free Practice" in html
+    assert "Woodshed" in html

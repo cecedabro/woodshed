@@ -1,24 +1,29 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
+{% extends "base.html" %}
 
 {% block title %}Woodshed — Delete {{ routine.name }}{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Back", "/routines/" ~ routine.id ~ "/edit", back=True) }}{% endblock %}
 
 {% block content %}
-<div class="item-detail">
-    <div class="item-header">
-        <h1>Delete {{ routine.name }}</h1>
-    </div>
+<div class="stack-lg">
+  <h2>Delete {{ routine.name }}</h2>
 
-    <div class="delete-warning">
-        <p>Are you sure you want to delete <strong>{{ routine.name }}</strong>?</p>
-        <p class="delete-note">
-            Logged practice sessions for this routine will be kept, but the routine
-            and its blocks will be removed permanently.
-        </p>
-    </div>
+  {% call ui.group(pad=True) %}
+    <p>Are you sure you want to delete <strong>{{ routine.name }}</strong>?</p>
+    <p class="delete-note">
+      Logged practice sessions for this routine will be kept, but the routine
+      and its blocks will be removed permanently.
+    </p>
+  {% endcall %}
 
-    <form method="post" action="/routines/{{ routine.id }}/delete">
-        <button type="submit" class="btn btn-danger">Delete this routine</button>
-        <a href="/routines" class="btn">Cancel</a>
-    </form>
+  <form method="post" action="/routines/{{ routine.id }}/delete">
+    <div class="actions actions-end">
+      {{ ui.button("Delete", kind="danger", type="submit") }}
+    </div>
+  </form>
+
+  <div class="actions actions-end">
+    <a class="btn btn-ghost" href="/routines/{{ routine.id }}/edit">Cancel</a>
+  </div>
 </div>
 {% endblock %}

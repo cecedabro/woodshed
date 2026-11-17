@@ -1,33 +1,38 @@
-{% extends "legacy_base.html" %}
+{% import "_ui.html" as ui %}
+{% extends "base.html" %}
 
 {% block title %}Woodshed — Delete {{ item.title }}{% endblock %}
+{% block nav_left %}{{ ui.nav_link("Back", "/items/" ~ item.id, back=True) }}{% endblock %}
 
 {% block content %}
-<div class="item-detail">
-    <div class="item-header">
-        <h1>Delete {{ item.title }}</h1>
-    </div>
+<div class="stack-lg">
+  <h2>Delete {{ item.title }}</h2>
 
-    <div class="delete-warning">
-        <p>Are you sure you want to delete <strong>{{ item.title }}</strong>?</p>
-        <p>This will permanently remove:</p>
-        <ul>
-            {% if attachment_count %}
-            <li>{{ attachment_count }} attachment{{ "s" if attachment_count != 1 }} (tabs, PDFs, audio files)</li>
-            {% endif %}
-            {% if take_count %}
-            <li>{{ take_count }} recording{{ "s" if take_count != 1 }}</li>
-            {% endif %}
-        </ul>
-        <p class="delete-note">
-            Logged practice sessions for this item will be kept, but the item itself
-            will no longer be available.
-        </p>
-    </div>
+  {% call ui.group(pad=True) %}
+    <p>Are you sure you want to delete <strong>{{ item.title }}</strong>?</p>
+    <p>This will permanently remove:</p>
+    <ul>
+      {% if attachment_count %}
+      <li>{{ attachment_count }} attachment{{ "s" if attachment_count != 1 }} (tabs, PDFs, audio files)</li>
+      {% endif %}
+      {% if take_count %}
+      <li>{{ take_count }} recording{{ "s" if take_count != 1 }}</li>
+      {% endif %}
+    </ul>
+    <p class="delete-note">
+      Logged practice sessions for this item will be kept, but the item itself
+      will no longer be available.
+    </p>
+  {% endcall %}
 
-    <form method="post" action="/items/{{ item.id }}/delete">
-        <button type="submit" class="btn btn-danger">Delete this item</button>
-        <a href="/items/{{ item.id }}" class="btn">Cancel</a>
-    </form>
+  <form method="post" action="/items/{{ item.id }}/delete">
+    <div class="actions actions-end">
+      {{ ui.button("Delete", kind="danger", type="submit") }}
+    </div>
+  </form>
+
+  <div class="actions actions-end">
+    <a class="btn btn-ghost" href="/items/{{ item.id }}">Cancel</a>
+  </div>
 </div>
 {% endblock %}

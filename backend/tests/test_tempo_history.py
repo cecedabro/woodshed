@@ -278,7 +278,7 @@ def test_page_with_tempo_svg(client, db: Session) -> None:
     assert resp.status_code == 200
     assert "<svg" in resp.text
     assert 'class="tempo-svg"' in resp.text
-    assert 'aria-label="Tempo history"' in resp.text
+    assert 'aria-label="Tempo history (BPM)"' in resp.text
 
 
 def test_page_tempo_section_with_single_entry(client, db: Session) -> None:

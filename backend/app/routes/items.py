@@ -15,6 +15,7 @@ from app.db import get_db
 from app.items_service import filter_items, get_item, group_by_status
 from app.media import TooLarge, delete_file, kind_for_filename, save_upload
 from app.models import Attachment, Item
+from app.musicbrainz import MBUnavailable, build_query, search
 from app.stats import tempo_history
 from app.templating import env, get_theme
 
@@ -55,6 +56,31 @@ def get_library(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/items/lookup", response_model=None)
+def get_lookup_items(request: Request) -> HTMLResponse:
+    """GET /items/lookup?title=&artist= – search MusicBrainz and return results."""
+    title = request.query_params.get("title", "")
+    artist = request.query_params.get("artist", "")
+    q = build_query(title, artist)
+    error = ""
+    candidates = []
+    if q:
+        try:
+            candidates = search(q, settings=request.app.state.settings)
+        except MBUnavailable:
+            error = "MusicBrainz didn't answer. Fill in the song yourself."
+    return HTMLResponse(
+        env.get_template("partials/mb_results.html").render(
+            candidates=candidates,
+            error=error,
+            q=q,
+            title=title,
+            artist=artist,
+            theme=get_theme(request.app),
+        )
+    )
+
+
 @router.get("/items/{item_id}", response_model=None)
 def get_item_page(request: Request, item_id: int) -> HTMLResponse | RedirectResponse:
     with request.app.state.sessionmaker() as db:
@@ -76,6 +102,7 @@ def get_item_page(request: Request, item_id: int) -> HTMLResponse | RedirectResp
             active="items",
             edit_link=edit_url,
             tempo_history=tempo,
+            has_cover=False,
             theme=get_theme(request.app),
         )
     )

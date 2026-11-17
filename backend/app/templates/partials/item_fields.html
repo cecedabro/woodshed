@@ -1,0 +1,35 @@
+<section class="section">
+  <h2 class="section-header">Song</h2>
+  <div class="group">
+    {{ ui.select("kind", "Kind", kind_options, selected=item.kind if item else None, error=errors.get("kind") if errors else None) }}
+    {{ ui.field("title", "Title", value=item.title if item else "", required=True, error=errors.get("title") if errors else None) }}
+    {{ ui.field("artist", "Artist", value=item.artist if item else None) }}
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-header">Practice</h2>
+  <div class="group">
+    {{ ui.select("status", "Status", status_options, selected=item.status if item else None, error=errors.get("status") if errors else None) }}
+    {{ ui.field("current_bpm", "Current BPM", value=item.current_bpm if item and item.current_bpm is not none else None, type="number", error=errors.get("current_bpm") if errors else None) }}
+    {{ ui.field("year", "Year", value=item.year if item and item.year is not none else None, type="number") }}
+    {{ ui.field("original_url", "Original URL", value=item.original_url if item else None) }}
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-header">Notes</h2>
+  <div class="group">
+    {{ ui.textarea("notes", "Notes", value=item.notes if item else None) }}
+  </div>
+</section>
+
+<div hidden>
+  {{ ui.field("mbid", "MusicBrainz id", mbid, type="hidden") }}
+  {{ ui.field("release_group_id", "Release group", rgid, type="hidden") }}
+</div>
+
+<div class="actions actions-end">
+  {{ ui.link_button("Cancel", back_url, kind="secondary") }}
+  {{ ui.button("Save", kind="primary", type="submit") }}
+</div>

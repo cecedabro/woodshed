@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     MEDIA_DIR: Path = Path(".media")
     LOG_LEVEL: str = "INFO"
     MAX_ATTACHMENT_BYTES: int = 100 * 1024 * 1024  # 100 MB
+    MB_USER_AGENT: str = "woodshed/1.0 (https://guitar.home.cedricschippers.dev)"
 
 
 def check_production(settings: Settings) -> None:

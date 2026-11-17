@@ -1,28 +1,48 @@
-{% extends "legacy_base.html" %}
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
 
 {% block title %}Woodshed — Settings{% endblock %}
 
 {% block content %}
-<h1>Settings</h1>
-<form method="post" action="/settings">
-    <div class="field">
-        <label for="weekly_goal_minutes">Weekly goal (minutes)</label>
-        {% if error %}
-        <span class="error">{{ error }}</span>
-        {% endif %}
-        <input type="number" name="weekly_goal_minutes" id="weekly_goal_minutes"
-               value="{{ value }}" min="0" max="10080" required>
-        <span class="hint">0–10080 minutes (7 days)</span>
+<div class="stack-lg">
+  <form method="post" action="/settings" class="form stack-lg">
+    {% call ui.section("Practice") %}
+      {% call ui.group() %}
+        {{ ui.field("weekly_goal_minutes", "Weekly goal (minutes)", type="number", value=value,
+                    hint="0 turns the goal off", error=error) }}
+      {% endcall %}
+    {% endcall %}
+
+    {% call ui.section("Look") %}
+      {% call ui.group() %}
+        {{ ui.select("theme", "Theme", theme_options, selected=theme) }}
+      {% endcall %}
+    {% endcall %}
+
+    {% call ui.section("Tuner") %}
+      {% call ui.group() %}
+        {{ ui.field("tuner_a4", "Reference A4 (Hz)", type="number", value=tuner_a4,
+                    hint="430–450") }}
+      {% endcall %}
+    {% endcall %}
+
+    <div class="actions actions-end">
+      {{ ui.button("Save", kind="primary", type="submit") }}
     </div>
-    <div class="field">
-        <label for="theme">Theme</label>
-        <select name="theme" id="theme">
-            {% for value, label in theme_options %}
-            <option value="{{ value }}" {% if theme == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        <span class="hint">Amp, Flat, or Daylight (default: Amp)</span>
-    </div>
-    <button type="submit">Save</button>
-</form>
+  </form>
+
+  {% call ui.section("More") %}
+    {% call ui.group() %}
+      {{ ui.row("Style guide", href="/styleguide") }}
+    {% endcall %}
+  {% endcall %}
+
+  <form method="post" action="/logout">
+    {% call ui.section("Account") %}
+      {% call ui.group() %}
+        {{ ui.row_button("Log out", tone="danger") }}
+      {% endcall %}
+    {% endcall %}
+  </form>
+</div>
 {% endblock %}

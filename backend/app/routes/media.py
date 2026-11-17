@@ -4,9 +4,39 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy import select
 
-from app.models import Attachment, Take
+from app.models import Attachment, Item, Take
 
 router = APIRouter()
+
+
+@router.get("/media/cover/{item_id}", response_model=None)
+def get_cover(
+    item_id: int,
+    request: Request,
+) -> Response:
+    """Serve the cover image for *item_id*, or 404 if none exists (SPEC 14.4)."""
+    with request.app.state.sessionmaker() as db:
+        try:
+            item = db.scalar(select(Item).where(Item.id == item_id))
+        finally:
+            db.close()
+
+    if item is None or not item.has_cover:
+        raise HTTPException(status_code=404, detail="Cover not found")
+
+    media_dir = request.app.state.settings.MEDIA_DIR
+    for ext in ("jpg", "png"):
+        path = media_dir / "cover" / f"{item_id}.{ext}"
+        if path.exists():
+            content = path.read_bytes()
+            media_type = "image/jpeg" if ext == "jpg" else "image/png"
+            return Response(
+                content=content,
+                media_type=media_type,
+                headers={"Content-Disposition": f'inline; filename="{item_id}.{ext}"'},
+            )
+
+    raise HTTPException(status_code=404, detail="Cover file missing on disk")
 
 
 @router.get("/media/{kind}/{media_id}", response_model=None)

@@ -8,9 +8,27 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.config import Settings
+from app.covers import fetch_cover, save_cover
 from app.db import get_db
 from app.items_service import ItemIn, create_item, get_item, update_item
+from app.models import Item
 from app.templating import env, get_theme
+
+
+def _try_fetch_cover(item: Item, data: ItemIn, settings: Settings) -> None:
+    """Attempt to fetch cover art; never raise (SPEC 14.4)."""
+    if not data.release_group_id:
+        return
+    try:
+        data_bytes = fetch_cover(data.release_group_id, settings.MB_USER_AGENT)
+        if data_bytes is not None:
+            saved = save_cover(item.id, data_bytes, settings.MEDIA_DIR)
+            if saved:
+                item.has_cover = True
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Template helpers
@@ -44,6 +62,9 @@ def _render_form(
         "status_options": _STATUS_OPTIONS,
         "item": item_in,
         "errors": errors,
+        "mbid": "",
+        "rgid": "",
+        "back_url": f"/items/{edit_id}" if edit_id is not None else "/library",
         "theme": get_theme(request.app),
     }
     if edit_id is not None:
@@ -59,6 +80,9 @@ def _item_to_form_data(db_item) -> ItemIn:  # type: ignore[no-untyped-def]
         artist=db_item.artist,
         status=db_item.status,
         current_bpm=db_item.current_bpm,
+        year=db_item.year,
+        mbid=db_item.mbid,
+        release_group_id=db_item.release_group_id,
         original_url=db_item.original_url,
         notes=db_item.notes or None,
     )
@@ -84,7 +108,7 @@ async def _extract_and_validate(
     form = await request.form()
     raw: dict[str, str | int] = {}
     for key, value in form.items():
-        if key == "current_bpm" and value:
+        if key == "current_bpm" and value or key == "year" and value:
             try:
                 raw[key] = int(str(value))
             except (ValueError, TypeError):
@@ -112,6 +136,10 @@ async def get_new_item(request: Request) -> HTMLResponse:
             status_options=_STATUS_OPTIONS,
             item=None,
             errors=None,
+            q="",
+            mbid="",
+            rgid="",
+            back_url="/library",
             theme=get_theme(request.app),
         )
     )
@@ -120,6 +148,7 @@ async def get_new_item(request: Request) -> HTMLResponse:
 async def post_new_item(
     request: Request,
     db: Session = Depends(get_db),
+    settings: Settings = Depends(lambda: Settings()),
 ) -> RedirectResponse | HTMLResponse:
     """POST /items/new -- create item."""
     data, fmt_errors = await _extract_and_validate(request)
@@ -128,6 +157,8 @@ async def post_new_item(
 
     assert data is not None
     item = create_item(db, data)
+    db.commit()
+    _try_fetch_cover(item, data, settings)
     db.commit()
     return RedirectResponse(url=f"/items/{item.id}", status_code=303)
 
@@ -151,6 +182,9 @@ async def get_edit_item(
             item=_item_to_form_data(item),
             errors=None,
             edit_id=item_id,
+            mbid=item.mbid or "",
+            rgid=item.release_group_id or "",
+            back_url=f"/items/{item_id}",
             theme=get_theme(request.app),
         )
     )
@@ -160,6 +194,7 @@ async def post_edit_item(
     request: Request,
     item_id: int,
     db: Session = Depends(get_db),
+    settings: Settings = Depends(lambda: Settings()),
 ) -> RedirectResponse | HTMLResponse:
     """POST /items/{id}/edit -- update item."""
     item = get_item(db, item_id)
@@ -174,5 +209,7 @@ async def post_edit_item(
 
     assert data is not None
     updated = update_item(db, item_id, data)
+    db.commit()
+    _try_fetch_cover(updated, data, settings)
     db.commit()
     return RedirectResponse(url=f"/items/{updated.id}", status_code=303)

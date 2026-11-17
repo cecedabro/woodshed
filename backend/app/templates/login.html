@@ -1,14 +1,13 @@
-{% extends "legacy_base.html" %}
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
 
-{% block title %}Woodshed — Login{% endblock %}
+{% block title %}Woodshed{% endblock %}
 
 {% block content %}
-<h1>Login</h1>
-{% if error %}
-<p class="error">{{ error }}</p>
-{% endif %}
-<form method="post" action="/login">
-    <input type="password" name="password" placeholder="Password" autofocus required>
-    <button type="submit">Login</button>
+<form method="post" class="form stack-lg">
+  <div class="group">
+    {{ ui.field("password", "Password", type="password", required=True, error=error) }}
+  </div>
+  {{ ui.button("Log in", kind="primary", type="submit", size="big", block=True) }}
 </form>
 {% endblock %}
