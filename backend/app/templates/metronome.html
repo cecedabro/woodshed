@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+
+{% block title %}Metronome{% endblock %}
+
+{% block content %}
+<div class="stack-lg" id="metronome">
+  {% call ui.section(id="met-top") %}
+    {{ ui.segmented_links("Tools", [("/tuner", "Tuner", False), ("/metronome", "Metronome", True)]) }}
+  {% endcall %}
+  {% call ui.group() %}
+    {% call ui.row("Tempo", chevron_=False) %}
+      <div class="stepper" role="group" aria-label="Tempo">
+        {{ ui.button("−5", kind="secondary", size="small", attrs={"data-bpm": "-5"}) }}
+        <output class="stepper-value" id="met-bpm" aria-live="polite">{{ bpm }}</output>
+        {{ ui.button("+5", kind="secondary", size="small", attrs={"data-bpm": "5"}) }}
+        {{ ui.button("Tap", kind="secondary", size="small", attrs={"id": "met-tap"}) }}
+      </div>
+    {% endcall %}
+    {% call ui.row("Beats", chevron_=False) %}
+      {{ ui.segmented("beats", "Beats per bar", [(2, "2"), (3, "3"), (4, "4"), (6, "6")], selected=4) }}
+    {% endcall %}
+  {% endcall %}
+  {{ ui.range_row("volume", "Volume", 0.5, attrs={"id": "met-volume"}) }}
+  <div class="split">
+    <div>
+      {{ ui.button("Start", kind="primary", icon_name="play", block=True, attrs={"id": "met-start"}) }}
+    </div>
+    <div>
+      {% call ui.group() %}
+        <div class="beats" id="met-beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      {% endcall %}
+    </div>
+  </div>
+</div>
+<script type="module" src="/static/js/metronome-page.js"></script>
+{% endblock %}

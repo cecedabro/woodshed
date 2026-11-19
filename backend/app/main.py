@@ -18,11 +18,13 @@ from app.db import make_engine, make_sessionmaker
 from app.routes import (
     items_router,
     media_router,
+    metronome_router,
     progress_router,
     pwa_router,
     routines_router,
     run_router,
     settings_router,
+    takes_router,
     tuner_router,
 )
 from app.security import SecurityMiddleware
@@ -84,14 +86,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             try:
                 rows = db.execute(
                     text(
-                        "SELECT r.id, r.name, COUNT(rb.id) AS block_count, "
-                        "COALESCE(SUM(rb.minutes), 0) AS total_minutes, "
-                        "MAX(ps.ended_at) AS last_practised "
+                        "SELECT r.id, r.name, "
+                        "COALESCE(sub.block_count, 0) AS block_count, "
+                        "COALESCE(sub.total_minutes, 0) AS total_minutes, "
+                        "sub.last_practised "
                         "FROM routine r "
-                        "LEFT JOIN routine_block rb ON rb.routine_id = r.id "
-                        "LEFT JOIN practice_session ps ON ps.routine_id = r.id "
-                        "GROUP BY r.id "
-                        "ORDER BY COALESCE(MAX(ps.ended_at), r.created_at) DESC"
+                        "LEFT JOIN ("
+                        "  SELECT rb.routine_id, "
+                        "    COUNT(*) AS block_count, "
+                        "    COALESCE(SUM(rb.minutes), 0) AS total_minutes, "
+                        "    (SELECT MAX(ps.ended_at) FROM practice_session ps "
+                        "     WHERE ps.routine_id = rb.routine_id) AS last_practised "
+                        "  FROM routine_block rb "
+                        "  GROUP BY rb.routine_id"
+                        ") sub ON sub.routine_id = r.id "
+                        "ORDER BY COALESCE(sub.last_practised, r.created_at) DESC"
                     )
                 ).fetchall()
 
@@ -180,9 +189,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(routines_router)
     app.include_router(run_router)
     app.include_router(settings_router)
+    app.include_router(metronome_router)
     app.include_router(tuner_router)
     app.include_router(api_router)
     app.include_router(sessions_router)
+    app.include_router(takes_router)
 
     return app
 

@@ -2,11 +2,12 @@
 {% from "_macros.html" import render_tempo_svg %}
 {% extends "base.html" %}
 
-{% block title %}Woodshed — {{ item.title }}{% endblock %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block nav_title %}{{ item.title }}{% endblock %}
 {% block nav_right %}{{ ui.nav_link("Edit", "/items/" ~ item.id ~ "/edit") }}{% endblock %}
 
 {% block content %}
-<div class="stack-lg">
+<div class="stack-lg" data-item-id="{{ item.id }}">
   {# Spread: title area with kind/status badges and practising link #}
   <div class="spread">
     <h2>{{ item.title }}</h2>
@@ -79,18 +80,18 @@
               {% endif %}
             {% endif %}
           {% endfor %}
-          <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data">
-            {% call ui.group() %}
-              {{ ui.field("file", "File", type="file") }}
-              {{ ui.field("label", "Label (optional)") }}
-            {% endcall %}
-            <div class="actions actions-end">
-              {{ ui.button("Upload", kind="primary", type="submit") }}
-            </div>
-          </form>
         {% else %}
           {{ ui.empty("No files uploaded", "Add tabs, PDFs, or backing tracks.", "", "", icon_name="files") }}
         {% endif %}
+        <form method="post" action="/items/{{ item.id }}/attachments" enctype="multipart/form-data">
+          {% call ui.group() %}
+            {{ ui.field("file", "File", type="file") }}
+            {{ ui.field("label", "Label (optional)") }}
+          {% endcall %}
+          <div class="actions actions-end">
+            {{ ui.button("Upload", kind="primary", type="submit") }}
+          </div>
+        </form>
       {% endcall %}
     </div>
     <div>
@@ -109,6 +110,10 @@
 
   {# Takes (future) #}
   {% call ui.section("Takes") %}
+    <div class="take-recorder" data-recorder>
+      {{ ui.button("Record a take", kind="outline-danger", block=True, icon_name="record", attrs={"data-action": "record"}) }}
+      <p class="runner-take-timer" data-elapsed hidden></p>
+    </div>
     {{ ui.empty("No takes recorded yet", "Start practising to record your first take.", "", "", icon_name="takes") }}
   {% endcall %}
 
@@ -117,4 +122,8 @@
     {{ ui.row("Delete this item…", href="/items/" ~ item.id ~ "/delete", tone="danger") }}
   {% endcall %}
 </div>
+{% endblock %}
+
+{% block head %}
+<script type="module" src="/static/js/items_detail-page.js"></script>
 {% endblock %}

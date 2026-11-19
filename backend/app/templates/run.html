@@ -32,6 +32,7 @@
         {%- endfor %}
       {% endcall %}
       {{ ui.button("Record a take", kind="outline-danger", block=True, icon_name="record", attrs={"id": "run-record"}) }}
+      <p class="runner-take-timer" id="run-timer" data-elapsed hidden></p>
     </div>
     {% call ui.group() %}
       {% call ui.row("Tempo", chevron_=False) %}{{ ui.stepper("tempo", start_bpm, "run-bpm", steps=(-1, 1)) }}{% endcall %}

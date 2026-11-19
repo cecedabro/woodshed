@@ -3,6 +3,22 @@
 Append 3–5 lines per task below. Older entries (T01–T61) are in `docs/progress-history.md`;
 don't read that file, search it with `rg` if you need something.
 
+## Metronome page (T90)
+- Created `backend/app/routes/metronome.py` with `GET /metronome` route rendering the template with default BPM and `active="tuner"`.
+- Created `backend/app/templates/metronome.html` per the design recipe: extends `base.html`, `.stack-lg` wrapper, `#met-bpm` display, `ui.stepper()` for tempo (50-220, step 5), `#met-tap` button, `ui.segmented()` for beats (2/3/4/6), `ui.range_row()` for volume (0.0-1.0), `#met-start` toggle button, and `#met-beats` with 4 spans. Loads `metronome-page.js` as an ES module importing `./metronome.js`.
+- Created `backend/app/static/js/metronome-page.js` as a stub ES module.
+- Wired router in `backend/app/routes/__init__.py` and `backend/app/main.py` (mounted before `tuner_router`).
+- Added `ui.segmented_links("Tools")` to both `tuner.html` and `metronome.html` for mutual navigation.
+- Fixed `ui.section()` calls to use `id="…"` instead of `attrs={"id": "…"}` (the macro only accepts `header`, `footer`, `id`).
+- Created `backend/tests/test_metronome_page.py` (12 tests): 200 status, active tab, mutual links, module script tag, all ID elements, beats selector options, BPM display, stepper buttons, tap button, volume input, start button, beats display.
+- All 610 tests pass, 97% coverage, `make check` clean.
+
+## T91: Metronome page behaviour
+- Created `backend/app/static/js/metronome-prefs.js` with pure `loadPrefs(storage)` and `savePrefs(storage, prefs)` functions handling localStorage persistence (BPM, beats, volume) with fallback defaults (80 bpm, 4 beats, 0.5 volume) and clamping (bpm 20–400, volume 0–1).
+- Implemented `backend/app/static/js/metronome-page.js` to wire T90 markup to the `Metronome` class: `AudioContext` created on first Start click, Start/Stop toggles label, BPM buttons use `clampBpm`, Tap uses `tapTempo`, beat dots highlight via `beatIndex` from `runner-view.js`, BPM/beats changes apply while running, volume syncs live.
+- Created `backend/tests/js/metronome-prefs.test.js` (13 tests): defaults when empty, round trip, bad volume/BPM/clamping, beats validation, savePrefs writes correct keys.
+- `make check` clean: 610 tests pass, 97% coverage.
+
 ## Gotchas so far
 - Login: one `LoginRequiredMiddleware` in `app/auth.py` guards everything except
   `OPEN_PATHS` / `/static/`. Routes need no login dependency. The `client` fixture is
@@ -203,6 +219,47 @@ don't read that file, search it with `rg` if you need something.
 - Updated `backend/app/routes/media.py`: added `GET /media/cover/{item_id}` route that looks up `Item.has_cover`, finds the cover file by `item_id.ext` in MEDIA_DIR/cover/, serves with correct `Content-Type` (`image/jpeg` or `image/png`), returns 404 when no cover or file missing.
 - Created `backend/tests/test_covers.py` (20 tests): magic byte detection (JPEG/PNG/HTML/empty), fetch with fake injectors (JPEG, PNG, HTML rejection, oversized, network error), save cover (JPEG, PNG, OSError return False), API item creation with/without release_group_id, form item creation/edit with release_group_id, cover serving (JPEG 200 + correct content-type, PNG 200, 404 when no cover, 404 for nonexistent item).
 - All 558 tests pass, 97% coverage, `make check` clean.
+
+## Home routine counts fix: separate subqueries (T86)
+- Replaced the single join query in `backend/app/main.py` (home route) with a subquery that aggregates `routine_block` counts/minutes and the last session independently, preventing the N×M inflation bug (e.g. 3 blocks × 4 sessions → 12 blocks).
+- Created `backend/tests/test_home_counts.py` (6 tests): routine with 3 blocks and 4 sessions shows "3 blocks · 20 min"; no-block routine shows "0 blocks · 0 min"; single block/1 session; blocks with no sessions; two routines with different counts coexist correctly.
+- All 565 tests pass, 97% coverage, `make check` clean.
+
+## Item upload form always renders (T87)
+- Fixed `backend/app/templates/items_detail.html`: moved the upload form outside the `{% if item.attachments %}` block so it renders unconditionally, placing it below the empty state.
+- Created `backend/tests/test_item_upload_form.py` (9 tests): verifies form existence with zero/one/audio/pdf attachments, correct `action`, `enctype`, `type="file"`, `name="file"` attributes, and exact form count (1) regardless of attachment presence.
+
+## Search MusicBrainz HTMX form (T88)
+- Replaced the broken inline `<script>` (which used non-existent `hx.get()`) in `backend/app/templates/items_new.html` with an HTMX form: `<form hx-get="/items/lookup" hx-target="#mb-results">` containing `title` and `artist` inputs and a submit button.
+- The form is placed before (not inside) the main item form, with `#mb-results` div between them.
+- Created `backend/tests/test_item_new_lookup.py` (5 tests): no inline `<script>` without `src`, HTMX form with correct attributes, inputs named `title`/`artist`, form not nested in another form, `#mb-results` exists.
+- All 579 tests pass, 97% coverage, `make check` clean.
+- All 574 tests pass, 97% coverage, `make check` clean.
+
+## Page titles (T89)
+- Stripped "Woodshed — " / "Woodshed · " prefixes from `{% block title %}` in 9 templates:
+  `tuner.html`, `settings.html`, `routines_new.html`, `routines_delete.html`,
+  `items_detail.html`, `items_tab.html`, `items_delete.html`, `items_new.html`, `items_edit.html`.
+- Added `{% block nav_title %}` overrides to `items_detail.html`, `items_tab.html`,
+  `items_delete.html`, and `routines_delete.html` so the navbar h1 shows only the resource name.
+- Created `backend/tests/test_titles.py` (15 tests) verifying "Woodshed" appears exactly once
+  in `<title>` and zero times in `.navbar-title` for 7 routes, plus `/` has `<title>Woodshed</title>`.
+- All 594 tests pass, 97% coverage, `make check` clean.
+
+## T35: Takes upload fix — settings dependency & persistence
+- Fixed `POST /api/items/{item_id}/takes` in `backend/app/routes/takes.py`: replaced `settings: Settings = Depends(lambda: Settings())` with `request: Request` dependency and `request.app.state.settings` lookup, which resolved file persistence failures in tests (the old approach created a new Settings instance with the default MEDIA_DIR, ignoring the test fixture's tmp_path).
+- Added `file.filename is None` guard (415 response) for type safety with mypy.
+- Fixed exception chaining (`TooLarge as e` → `raise ... from e`) per bandit B904.
+- Removed unused imports (`BaseModel`, `select`, `Settings`, `Item`).
+- All 621 tests pass, 96% coverage, `make check` clean.
+
+## T92: Recorder integration into runner and item detail pages
+- Added `[data-elapsed]` timer display in `run.html` (below the record button) and `items_detail.html` (in the Takes section, wrapped in `[data-recorder]`).
+- Updated `run-page.js`: imported `createRecorder`, added `el.timer` and `el.record` references, tracked `sessionId` from API, initialized `recorder` with the session block ID, and stopped the recorder in the `stop()` function when the session ends.
+- Created `items_detail-page.js`: initializes the recorder for the item detail page with no BPM/sessionBlockId (free practice takes).
+- Added `.runner-take-timer` CSS rule in `pages.css` for the elapsed timer display.
+- Fixed `recorder.test.js`: rewrote all `createRecorder` tests to be async-aware of the `getUserMedia` promise flow, replaced direct `navigator` replacement with `navigator.mediaDevices.getUserMedia` property definition.
+- `make check` clean: 621 tests pass, 97% coverage.
 ## T43–T46 (by hand, 2026-11-16)
 Release + deploy drafts done outside the loop so the app can go on the cluster early.
 `backend/scripts/next_version.py` (+ tests), `.github/workflows/release.yml` (ci.yml got

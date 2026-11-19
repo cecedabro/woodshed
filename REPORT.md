@@ -1,10 +1,28 @@
-# Agent run agent/2026-11-16-1040
+# Agent run agent/2026-11-16-2024
 
-Ended 2026-11-16 19:51: interrupted. 0 done, 0 skipped, 0.2 h.
+Ended 2026-11-16 23:53: interrupted. 8 done, 0 skipped, 3.5 h.
 
 | Task | Result | Attempts | Minutes | Note |
 | --- | --- | --- | --- | --- |
+| T86 Home routine counts are wrong: the query in `app/main.py` joins `routine_block` and `practice_session` in one query, so blocks and minutes are multiplied by the number of sessions ("30 blocks · 250 min" for a 3-block, 25-min routine). Count blocks/minutes and the last session in separate subqueries. Write `tests/test_home_counts.py`: a routine with blocks of 5, 10 and 5 min and 4 finished sessions → the home page shows "3 blocks · 20 min"; a routine with no blocks shows "0 blocks · 0 min". | done | 1 | 7 |  |
+| T87 First file upload: on the item page the upload form only renders when the item already has attachments, so you can never add the first one. Render the form in both cases (the "No files uploaded" empty state stays above it when there are none). Write `tests/test_item_upload_form.py`: an item without attachments → the page has `<form` with `action="/items/{id}/attachments"`, `enctype="multipart/form-data"` and an `<input` of `type="file"` named `file`; with one attachment the form is still there exactly once. | done | 1 | 9 |  |
+| T88 "Search MusicBrainz" on `/items/new` does nothing: its inline `<script>` is blocked by the CSP and calls `hx.get`, which does not exist. Delete the script. Make the lookup an HTMX form instead, placed before (not inside) the item form: `<form hx-get="/items/lookup" hx-target="#mb-results">` with inputs named `title` and `artist` and a submit button "Search MusicBrainz". No JavaScript needed. Write `tests/test_item_new_lookup.py` (parse with `html.parser`): no `<script>` without `src` on the page; a form with `hx-get="/items/lookup"` and `hx-target="#mb-results"` containing inputs `title` and `artist`; that form is not nested in another form; `#mb-results` exists. | done | 1 | 9 |  |
+| T89 Page titles: the `title` block becomes both the browser title (base adds " · Woodshed") and the nav-bar title, so templates must not start it with "Woodshed — ". Fix every template that does (`rg -n 'Woodshed —' backend/app/templates`) and use sentence case ("New item", "New routine"). The item page's title is just the item title. Write `tests/test_titles.py`: for `/tuner`, `/settings`, `/items/new`, `/routines/new`, an item page, an item delete page and a routine delete page, "Woodshed" appears exactly once in `<title>` and not at all in the `navbar-title` h1; `/` has `<title>Woodshed</title>`. | done | 1 | 12 |  |
+| T90 Metronome page markup (the runner's metronome, outside a routine): `GET /metronome` (`active="tuner"`, title "Metronome", route in a new `app/routes/metronome.py`) built from the `_ui.html` macros like the runner's tempo group: a big BPM number `#met-bpm`, a stepper with `−`/`+` and buttons `[data-bpm="-5"]`/`[data-bpm="5"]`, Tap `#met-tap`, beats per bar choice 2/3/4/6 (`input[name="beats"]`, 4 checked), volume `#met-volume`, a primary Start/Stop button `#met-start`, and the beat dots `#met-beats` (4 spans). Put a segmented control "Tuner | Metronome" (`ui.segmented_links`) (links to `/tuner` and `/metronome`, the current one marked) at the top of both `/metronome` and `/tuner`. Loads `static/js/metronome-page.js` as a module (an empty module that only imports `./metronome.js` is fine for this task). Write `tests/test_metronome_page.py`: 200 logged in; `aria-current="page"` on the `/tuner` tab; the module script tag; every id above; four beat options with values 2, 3, 4, 6; both pages link to each other in the segmented control. | done | 1 | 12 |  |
+| T91 Metronome page behaviour: `static/js/metronome-page.js` wires the T90 markup to `Metronome` from `metronome.js` (an `AudioContext` created on the first Start click). Start/Stop toggles the label; −/+ change BPM by 1 and ±5 by 5 (always `clampBpm`), Tap uses `tapTempo`; changing BPM or beats while running applies at once; the current beat's dot gets `is-on` via `onBeat` (`beatIndex` from `runner-view.js`); BPM, beats and volume are remembered in localStorage (keys `woodshed_metronome_bpm`, `woodshed_metronome_beats`, and the runner's existing volume key). Put the storage logic in pure functions in `static/js/metronome-prefs.js` (`loadPrefs(storage)`, `savePrefs(storage, prefs)`; bad or missing values fall back to 80 BPM, 4 beats, volume 0.5). Write `tests/js/metronome-prefs.test.js` with a fake storage: defaults when empty; round trip; "abc" and 999 BPM fall back/clamp; beats 5 falls back to 4. | done | 1 | 11 |  |
+| T35 Takes upload (SPEC 8.2) in `app/takes.py`: `sniff_audio(first_bytes) -> "webm"|"mp4"|"ogg"|None`, `POST /api/items/{id}/takes`. Add `MAX_TAKE_BYTES` (default 25 MB) to Settings. Write `tests/test_takes_upload.py` (each of the three formats with crafted header bytes → 201, row + file; wrong bytes → 415; declared mp4 with WebM bytes → 415; too big → 413; duration 0 and 601 → 422). | done | 2 | 48 |  |
+| T36 `static/js/recorder.js` `pickMimeType` + glue (SPEC 8.1): one record button (on the runner and the item page) that toggles recording, shows elapsed time, stops at 600 s and uploads with the current BPM and block. Write `tests/js/recorder.test.js` (Safari-like support → `audio/mp4`; nothing supported → ""). | done | 1 | 32 |  |
 
-7 task(s) not started: T35, T36, T37, T38, T40, T41, T47
+5 task(s) not started: T37, T38, T40, T41, T47
+
+## Push failed
+
+Pushing failed 9 time(s); commits may exist only in the devbox checkout. Last error:
+
+```
+To https://github.com/cecedabro/woodshed.git
+ ! [remote rejected] agent/2026-11-16-2024 -> agent/2026-11-16-2024 (refusing to allow a Personal Access Token to create or update workflow `.github/workflows/ci.yml` without `workflow` scope)
+error: failed to push some refs to 'https://github.com/cecedabro/woodshed.git'
+```
 
 Logs: `.agent/logs/` in the devbox checkout.
